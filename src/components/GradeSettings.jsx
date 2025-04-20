@@ -1,136 +1,199 @@
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faEdit, 
-  faTrash, 
-  faPlus, 
-  faSave, 
-  faTimes, 
+import {
+  faEdit,
+  faTrash,
+  faPlus,
+  faSave,
+  faTimes,
   faChevronRight,
   faCheckCircle,
-  faChalkboardTeacher
+  faChalkboardTeacher,
 } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 
 const GradeSettings = () => {
-  // Sample initial data for university teacher ranks
-  const initialTeacherRanks = [
-    { id: 1, rank: 'Assistant Lecturer', monthlySalary: 3000 },
-    { id: 2, rank: 'Lecturer', monthlySalary: 5000 },
-    { id: 3, rank: 'Assistant Professor', monthlySalary: 7000 },
-    { id: 4, rank: 'Associate Professor', monthlySalary: 9000 },
-    { id: 5, rank: 'Full Professor', monthlySalary: 12000 },
-  ];
-
-  const [ranks, setRanks] = useState(initialTeacherRanks);
+  const [grades, setGrades] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    rank: '',
-    monthlySalary: ''
+    gradeName: '',
+    pricePerHour: '',
+    charge: '',
   });
-  const [rankToDelete, setRankToDelete] = useState(null);
+  const [gradeToDelete, setGradeToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
+  // Fetch grades on component mount
   useEffect(() => {
-    if (successMessage) {
+    fetchGrades();
+  }, []);
+
+  // Clear success/error messages after 3 seconds
+  useEffect(() => {
+    if (successMessage || errorMessage) {
       const timer = setTimeout(() => {
         setSuccessMessage('');
+        setErrorMessage('');
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [successMessage]);
+  }, [successMessage, errorMessage]);
+
+  const fetchGrades = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/grade/get', {
+        withCredentials: true,
+      });
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid API response: Expected an array');
+      }
+      const grades = response.data.map((grade) => ({
+        id: grade.id,
+        gradeName: grade.gradeName || '',
+        pricePerHour: grade.pricePerHour !== undefined ? grade.pricePerHour : 0,
+        charge: grade.charge !== undefined ? grade.charge : 0,
+      }));
+      setGrades(grades);
+      console.log(grades);
+    } catch (error) {
+      setErrorMessage('Failed to fetch grades');
+      console.error('Error fetching grades:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAdd = () => {
-    if (!formData.rank || !formData.monthlySalary) return;
-    
-    const newRank = {
-      id: ranks.length > 0 ? Math.max(...ranks.map(r => r.id)) + 1 : 1,
-      rank: formData.rank,
-      monthlySalary: parseFloat(formData.monthlySalary)
-    };
-    
-    setRanks([...ranks, newRank]);
-    setFormData({ rank: '', monthlySalary: '' });
-    setIsAdding(false);
-    setSuccessMessage('Academic rank added successfully!');
+  const handleAdd = async () => {
+    if (!formData.gradeName || !formData.pricePerHour || !formData.charge) {
+      setErrorMessage('Please fill all fields');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        'http://localhost:3000/api/grade/create',
+        {
+          gradeName: formData.gradeName,
+          pricePerHour: parseFloat(formData.pricePerHour),
+          charge: parseFloat(formData.charge),
+        },
+        { withCredentials: true }
+      );
+      setGrades([...grades, response.data]);
+      setFormData({ gradeName: '', pricePerHour: '', charge: '' });
+      setIsAdding(false);
+      setSuccessMessage('Grade added successfully!');
+    } catch (error) {
+      setErrorMessage('Failed to add grade');
+      console.error('Error adding grade:', error);
+    }
   };
 
-  const startEditing = (rank) => {
-    setEditingId(rank.id);
+  const startEditing = (grade) => {
+    setEditingId(grade.id);
     setFormData({
-      rank: rank.rank,
-      monthlySalary: rank.monthlySalary.toString()
+      gradeName: grade.gradeName || '',
+      pricePerHour: grade.pricePerHour !== undefined ? String(grade.pricePerHour) : '',
+      charge: grade.charge !== undefined ? String(grade.charge) : '',
     });
   };
 
-  const saveEdit = () => {
-    if (!formData.rank || !formData.monthlySalary) return;
-    
-    setRanks(ranks.map(rank => 
-      rank.id === editingId 
-        ? { 
-            ...rank, 
-            rank: formData.rank, 
-            monthlySalary: parseFloat(formData.monthlySalary) 
-          } 
-        : rank
-    ));
-    setEditingId(null);
-    setFormData({ rank: '', monthlySalary: '' });
-    setSuccessMessage('Academic rank updated successfully!');
+  const saveEdit = async () => {
+    if (!formData.gradeName || !formData.pricePerHour || !formData.charge) {
+      setErrorMessage('Please fill all fields');
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        'http://localhost:3000/api/grade/update',
+        {
+          id: editingId,
+          gradeName: formData.gradeName,
+          pricePerHour: parseFloat(formData.pricePerHour),
+          charge: parseFloat(formData.charge),
+        },
+        { withCredentials: true }
+      );
+      setGrades(
+        grades.map((grade) =>
+          grade.id === editingId ? response.data : grade
+        )
+      );
+      setEditingId(null);
+      setFormData({ gradeName: '', pricePerHour: '', charge: '' });
+      setSuccessMessage('Grade updated successfully!');
+    } catch (error) {
+      setErrorMessage('Failed to update grade');
+      console.error('Error updating grade:', error);
+    }
   };
 
   const resetView = () => {
     setEditingId(null);
     setIsAdding(false);
-    setFormData({ rank: '', monthlySalary: '' });
+    setFormData({ gradeName: '', pricePerHour: '', charge: '' });
   };
 
-  const confirmDelete = (rank, e) => {
+  const confirmDelete = (grade, e) => {
     e.stopPropagation();
-    setRankToDelete(rank);
+    setGradeToDelete(grade);
   };
 
-  const handleDelete = () => {
-    setRanks(ranks.filter(rank => rank.id !== rankToDelete.id));
-    setRankToDelete(null);
-    setSuccessMessage('Academic rank deleted successfully!');
+  const handleDelete = async () => {
+    try {
+      await axios.delete('http://localhost:3000/api/grade/delete', {
+        data: { id: gradeToDelete.id },
+        withCredentials: true,
+      });
+      setGrades(grades.filter((grade) => grade.id !== gradeToDelete.id));
+      setGradeToDelete(null);
+      setSuccessMessage('Grade deleted successfully!');
+    } catch (error) {
+      setErrorMessage('Failed to delete grade');
+      console.error('Error deleting grade:', error);
+    }
   };
 
   const cancelDelete = () => {
-    setRankToDelete(null);
+    setGradeToDelete(null);
   };
 
   return (
     <div className="space-y-6 relative">
-      {/* Success Message */}
-      {successMessage && (
-        <div className="rounded-md bg-green-50 p-3 border border-green-100 mb-6">
+      {/* Success/Error Message */}
+      {(successMessage || errorMessage) && (
+        <div
+          className={`rounded-md p-3 border mb-6 ${
+            successMessage ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+          }`}
+        >
           <div className="flex items-center">
             <FontAwesomeIcon
               icon={faCheckCircle}
-              className="flex-shrink-0 h-5 w-5 text-green-500 mr-2"
+              className={`flex-shrink-0 h-5 w-5 ${
+                successMessage ? 'text-green-500' : 'text-red-500'
+              } mr-2`}
             />
-            <p className="text-sm font-medium text-gray-700">{successMessage}</p>
+            <p className="text-sm font-medium text-gray-700">
+              {successMessage || errorMessage}
+            </p>
           </div>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
-      {rankToDelete && (
+      {gradeToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Deletion</h3>
             <p className="mb-6">
-              Are you sure you want to delete the <strong>{rankToDelete.rank}</strong> rank?
+              Are you sure you want to delete the <strong>{gradeToDelete.gradeName}</strong> grade?
               This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
@@ -153,30 +216,32 @@ const GradeSettings = () => {
 
       {/* Page Header */}
       <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800 inline-flex items-center">
-            <FontAwesomeIcon icon={faChalkboardTeacher} className="mr-3 text-blue-600" />
-            <button 
-              onClick={resetView}
-              className={`hover:text-blue-600 ${(isAdding || editingId !== null) ? 'cursor-pointer' : 'cursor-default'}`}
-            >
-              Academic Grades
-            </button>
-            {(isAdding || editingId !== null) && (
-              <>
-                <FontAwesomeIcon icon={faChevronRight} className="mx-2 text-gray-500 text-sm" />
-                <span className="text-gray-600 font-medium">
-                  {editingId !== null ? 'Edit' : 'Add'}
-                </span>
-              </>
-            )}
-          </h2>
+        <h2 className="text-2xl font-bold text-gray-800 inline-flex items-center">
+          <FontAwesomeIcon icon={faChalkboardTeacher} className="mr-3 text-blue-600" />
+          <button
+            onClick={resetView}
+            className={`hover:text-blue-600 ${
+              isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'
+            }`}
+          >
+            Academic Grades
+          </button>
+          {(isAdding || editingId !== null) && (
+            <>
+              <FontAwesomeIcon icon={faChevronRight} className="mx-2 text-gray-500 text-sm" />
+              <span className="text-gray-600 font-medium">
+                {editingId !== null ? 'Edit' : 'Add'}
+              </span>
+            </>
+          )}
+        </h2>
         {!isAdding && editingId === null && (
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Rank
+            Add New Grade
           </button>
         )}
       </div>
@@ -185,31 +250,44 @@ const GradeSettings = () => {
       {(isAdding || editingId !== null) && (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h3 className="text-lg font-medium mb-6">
-            {editingId !== null ? 'Edit Academic Rank' : 'Add New Academic Rank'}
+            {editingId !== null ? 'Edit Academic Grade' : 'Add New Academic Grade'}
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Academic Rank</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Grade Name</label>
               <input
                 type="text"
-                name="rank"
-                value={formData.rank}
+                name="gradeName"
+                value={formData.gradeName}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g. Associate Professor"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Salary ($)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price Per Hour (DA)</label>
               <input
                 type="number"
-                name="monthlySalary"
-                value={formData.monthlySalary}
+                name="pricePerHour"
+                value={formData.pricePerHour}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. 9000"
+                placeholder="e.g. 500"
                 min="0"
-                step="100"
+                step="10"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Charge (DA)</label>
+              <input
+                type="number"
+                name="charge"
+                value={formData.charge}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. 1000"
+                min="0"
+                step="10"
               />
             </div>
           </div>
@@ -226,39 +304,51 @@ const GradeSettings = () => {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               <FontAwesomeIcon icon={faSave} className="mr-2" />
-              {editingId !== null ? 'Save Changes' : 'Add Rank'}
+              {editingId !== null ? 'Save Changes' : 'Add Grade'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Ranks Table */}
+      {/* Grades Table */}
       {!isAdding && editingId === null && (
         <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Rank</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Salary</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Grade Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price Per Hour (DA)
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Charge
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {ranks.length > 0 ? (
-                  ranks.map((rank) => (
-                    <tr 
-                      key={rank.id}
-                      onClick={() => startEditing(rank)}
+                {grades.length > 0 ? (
+                  grades.map((grade) => (
+                    <tr
+                      key={grade.id}
+                      onClick={() => startEditing(grade)}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {rank.rank}
+                        {grade.gradeName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {rank.monthlySalary.toLocaleString()} DA
+                        {grade.pricePerHour}
                       </td>
-                      <td 
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {grade.charge}
+                      </td>
+                      <td
                         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -266,7 +356,7 @@ const GradeSettings = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditing(rank);
+                              startEditing(grade);
                             }}
                             className="text-blue-600 hover:text-blue-900"
                             title="Edit"
@@ -274,7 +364,7 @@ const GradeSettings = () => {
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
                           <button
-                            onClick={(e) => confirmDelete(rank, e)}
+                            onClick={(e) => confirmDelete(grade, e)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
@@ -286,8 +376,8 @@ const GradeSettings = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
-                      No academic grades found. Add your first rank!
+                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                      No academic grades found. Add your first grade!
                     </td>
                   </tr>
                 )}

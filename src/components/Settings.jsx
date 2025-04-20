@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import GradeSettings from './GradeSettings';
+import HolidaySettings from './HolidaySettings';
+import CoefficientSettings from './CoefficientSettings';
+import PromotionSettings from './PromotionSettings';
+import SpecialitySettings from './SpecialitySettings';
 import {
   faShieldAlt,
   faChartLine,
@@ -98,44 +102,4 @@ const SidebarItem = ({ active, onClick, icon, text }) => (
     </button>
   </li>
 );
-
-// Placeholder components for each settings section
-const SpecialitySettings = () => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800">Speciality Settings</h2>
-    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-      <p className="text-gray-600">Configure speciality options here.</p>
-    </div>
-  </div>
-);
-
-const PromotionSettings = () => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800">Promotion Settings</h2>
-    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-      <p className="text-gray-600">Configure promotion rules and criteria.</p>
-    </div>
-  </div>
-);
-
-const CoefficientSettings = () => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800">Coefficient Settings</h2>
-    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-      <p className="text-gray-600">Manage coefficients and multipliers.</p>
-    </div>
-  </div>
-);
-
-const HolidaySettings = () => (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-gray-800">Holiday Settings</h2>
-    <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-      <p className="text-gray-600">Set up holiday schedules and policies.</p>
-    </div>
-  </div>
-);
-
-
-
 export default SettingsPage;

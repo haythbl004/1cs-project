@@ -8,22 +8,22 @@ import {
   faTimes,
   faChevronRight,
   faCheckCircle,
-  faBook,
+  faCalendarAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const SpecialitySettings = () => {
-  const [specialities, setSpecialities] = useState([]);
+const HolidaySettings = () => {
+  const [holidays, setHolidays] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '' });
-  const [specialityToDelete, setSpecialityToDelete] = useState(null);
+  const [formData, setFormData] = useState({ startDate: '', endDate: '' });
+  const [holidayToDelete, setHolidayToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch all specialities on component mount
+  // Fetch holidays on component mount
   useEffect(() => {
-    fetchSpecialities();
+    fetchHolidays();
   }, []);
 
   // Clear success/error messages after 3 seconds
@@ -37,15 +37,15 @@ const SpecialitySettings = () => {
     }
   }, [successMessage, errorMessage]);
 
-  const fetchSpecialities = async () => {
+  const fetchHolidays = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/speciality', {
+      const response = await axios.get('http://localhost:3000/api/holiday', {
         withCredentials: true,
       });
-      setSpecialities(response.data);
+      setHolidays(response.data);
     } catch (error) {
-      setErrorMessage('Error fetching specialities');
-      console.error(error);
+      setErrorMessage('Failed to fetch holidays');
+      console.error('Error fetching holidays:', error);
     }
   };
 
@@ -55,88 +55,94 @@ const SpecialitySettings = () => {
   };
 
   const handleAdd = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
+    if (!formData.startDate || !formData.endDate) {
+      setErrorMessage('Please fill all fields');
       return;
     }
 
     try {
       const response = await axios.post(
-        'http://localhost:3000/api/speciality',
-        { name: formData.name },
+        'http://localhost:3000/api/holiday',
+        {
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+        },
         { withCredentials: true }
       );
-
-      setSpecialities([...specialities, response.data]);
-      setFormData({ name: '' });
+      setHolidays([...holidays, response.data]);
+      setFormData({ startDate: '', endDate: '' });
       setIsAdding(false);
-      setSuccessMessage('Speciality added successfully!');
+      setSuccessMessage('Holiday added successfully!');
     } catch (error) {
-      setErrorMessage('Error adding speciality');
-      console.error(error);
+      setErrorMessage('Failed to add holiday');
+      console.error('Error adding holiday:', error);
     }
   };
 
-  const startEditing = (speciality) => {
-    setEditingId(speciality.id);
-    setFormData({ name: speciality.name });
+  const startEditing = (holiday) => {
+    setEditingId(holiday.id);
+    setFormData({
+      startDate: holiday.startDate,
+      endDate: holiday.endDate,
+    });
   };
 
   const saveEdit = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
+    if (!formData.startDate || !formData.endDate) {
+      setErrorMessage('Please fill all fields');
       return;
     }
 
     try {
       const response = await axios.put(
-        `http://localhost:3000/api/speciality/${editingId}`,
-        { name: formData.name },
+        `http://localhost:3000/api/holiday/${editingId}`,
+        {
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+        },
         { withCredentials: true }
       );
-
-      setSpecialities(
-        specialities.map((speciality) =>
-          speciality.id === editingId ? response.data : speciality
+      setHolidays(
+        holidays.map((holiday) =>
+          holiday.id === editingId ? response.data : holiday
         )
       );
       setEditingId(null);
-      setFormData({ name: '' });
-      setSuccessMessage('Speciality updated successfully!');
+      setFormData({ startDate: '', endDate: '' });
+      setSuccessMessage('Holiday updated successfully!');
     } catch (error) {
-      setErrorMessage('Error updating speciality');
-      console.error(error);
+      setErrorMessage('Failed to update holiday');
+      console.error('Error updating holiday:', error);
     }
   };
 
   const resetView = () => {
     setEditingId(null);
     setIsAdding(false);
-    setFormData({ name: '' });
+    setFormData({ startDate: '', endDate: '' });
   };
 
-  const confirmDelete = (speciality, e) => {
+  const confirmDelete = (holiday, e) => {
     e.stopPropagation();
-    setSpecialityToDelete(speciality);
+    setHolidayToDelete(holiday);
   };
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:3000/api/speciality/${specialityToDelete.id}`, {
+      await axios.delete(`http://localhost:3000/api/holiday/${holidayToDelete.id}`, {
         withCredentials: true,
       });
-
-      setSpecialities(specialities.filter((speciality) => speciality.id !== specialityToDelete.id));
-      setSpecialityToDelete(null);
-      setSuccessMessage('Speciality deleted successfully!');
+      setHolidays(holidays.filter((holiday) => holiday.id !== holidayToDelete.id));
+      setHolidayToDelete(null);
+      setSuccessMessage('Holiday deleted successfully!');
     } catch (error) {
-      setErrorMessage('Error deleting speciality');
-      console.error(error);
+      setErrorMessage('Failed to delete holiday');
+      console.error('Error deleting holiday:', error);
     }
   };
 
   const cancelDelete = () => {
-    setSpecialityToDelete(null);
+    setHolidayToDelete(null);
   };
 
   return (
@@ -157,13 +163,14 @@ const SpecialitySettings = () => {
         </div>
       )}
 
-      {specialityToDelete && (
+      {holidayToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Deletion</h3>
             <p className="mb-6">
-              Are you sure you want to delete the <strong>{specialityToDelete.name}</strong> speciality?
-              This action cannot be undone.
+              Are you sure you want to delete the holiday from{' '}
+              <strong>{holidayToDelete.startDate}</strong> to{' '}
+              <strong>{holidayToDelete.endDate}</strong>? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -185,14 +192,14 @@ const SpecialitySettings = () => {
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 inline-flex items-center">
-          <FontAwesomeIcon icon={faBook} className="mr-3 text-blue-600" />
+          <FontAwesomeIcon icon={faCalendarAlt} className="mr-3 text-blue-600" />
           <button
             onClick={resetView}
             className={`hover:text-blue-600 ${
               isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'
             }`}
           >
-            Specialities
+            Holidays
           </button>
           {(isAdding || editingId !== null) && (
             <>
@@ -207,7 +214,7 @@ const SpecialitySettings = () => {
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Speciality
+            Add New Holiday
           </button>
         )}
       </div>
@@ -215,18 +222,27 @@ const SpecialitySettings = () => {
       {(isAdding || editingId !== null) && (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h3 className="text-lg font-medium mb-6">
-            {editingId !== null ? 'Edit Speciality' : 'Add New Speciality'}
+            {editingId !== null ? 'Edit Holiday' : 'Add New Holiday'}
           </h3>
-          <div className="grid grid-cols-1 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Speciality Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
               <input
-                type="text"
-                name="name"
-                value={formData.name}
+                type="date"
+                name="startDate"
+                value={formData.startDate}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Computer Science"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <input
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -243,7 +259,7 @@ const SpecialitySettings = () => {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <FontAwesomeIcon icon={faSave} className="mr-2" />
-              {editingId !== null ? 'Save Changes' : 'Add Speciality'}
+              {editingId !== null ? 'Save Changes' : 'Add Holiday'}
             </button>
           </div>
         </div>
@@ -256,7 +272,10 @@ const SpecialitySettings = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Speciality Name
+                    Start Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    End Date
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -264,15 +283,18 @@ const SpecialitySettings = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {specialities.length > 0 ? (
-                  specialities.map((speciality) => (
+                {holidays.length > 0 ? (
+                  holidays.map((holiday) => (
                     <tr
-                      key={speciality.id}
-                      onClick={() => startEditing(speciality)}
+                      key={holiday.id}
+                      onClick={() => startEditing(holiday)}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {speciality.name}
+                        {holiday.startDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {holiday.endDate}
                       </td>
                       <td
                         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
@@ -282,7 +304,7 @@ const SpecialitySettings = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditing(speciality);
+                              startEditing(holiday);
                             }}
                             className="text-blue-600 hover:text-blue-900"
                             title="Edit"
@@ -290,7 +312,7 @@ const SpecialitySettings = () => {
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
                           <button
-                            onClick={(e) => confirmDelete(speciality, e)}
+                            onClick={(e) => confirmDelete(holiday, e)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
@@ -302,8 +324,8 @@ const SpecialitySettings = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No specialities found. Add your first speciality!
+                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No holidays found. Add your first holiday!
                     </td>
                   </tr>
                 )}
@@ -316,4 +338,4 @@ const SpecialitySettings = () => {
   );
 };
 
-export default SpecialitySettings;
+export default HolidaySettings;

@@ -3,27 +3,25 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEdit,
   faTrash,
-  faPlus,
   faSave,
   faTimes,
   faChevronRight,
   faCheckCircle,
-  faBook,
+  faCalculator,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const SpecialitySettings = () => {
-  const [specialities, setSpecialities] = useState([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '' });
-  const [specialityToDelete, setSpecialityToDelete] = useState(null);
+const CoefficientSettings = () => {
+  const [coefficients, setCoefficients] = useState([]);
+  const [editingSeanceType, setEditingSeanceType] = useState(null);
+  const [formData, setFormData] = useState({ value: '' });
+  const [coefficientToDelete, setCoefficientToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch all specialities on component mount
+  // Fetch coefficients on component mount
   useEffect(() => {
-    fetchSpecialities();
+    fetchCoefficients();
   }, []);
 
   // Clear success/error messages after 3 seconds
@@ -37,15 +35,16 @@ const SpecialitySettings = () => {
     }
   }, [successMessage, errorMessage]);
 
-  const fetchSpecialities = async () => {
+  const fetchCoefficients = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/speciality', {
+      const response = await axios.get('http://localhost:3000/api/seanceTypeCoefficient', {
         withCredentials: true,
       });
-      setSpecialities(response.data);
+      // Extract the coefficients array from the response
+      setCoefficients(response.data.coefficients);
     } catch (error) {
-      setErrorMessage('Error fetching specialities');
-      console.error(error);
+      setErrorMessage('Failed to fetch coefficients');
+      console.error('Error fetching coefficients:', error.response?.data || error);
     }
   };
 
@@ -54,89 +53,85 @@ const SpecialitySettings = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAdd = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        'http://localhost:3000/api/speciality',
-        { name: formData.name },
-        { withCredentials: true }
-      );
-
-      setSpecialities([...specialities, response.data]);
-      setFormData({ name: '' });
-      setIsAdding(false);
-      setSuccessMessage('Speciality added successfully!');
-    } catch (error) {
-      setErrorMessage('Error adding speciality');
-      console.error(error);
-    }
-  };
-
-  const startEditing = (speciality) => {
-    setEditingId(speciality.id);
-    setFormData({ name: speciality.name });
+  const startEditing = (coefficient) => {
+    setEditingSeanceType(coefficient.seanceType);
+    setFormData({
+      value: coefficient.value.toString(),
+    });
   };
 
   const saveEdit = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
+    // Validate input
+    if (!formData.value) {
+      setErrorMessage('Please fill the coefficient value');
+      return;
+    }
+
+    const parsedValue = parseFloat(formData.value);
+    if (isNaN(parsedValue) || parsedValue <= 0) {
+      setErrorMessage('Coefficient value must be a positive number');
       return;
     }
 
     try {
+      // Send both seanceType and value in the request body
       const response = await axios.put(
-        `http://localhost:3000/api/speciality/${editingId}`,
-        { name: formData.name },
+        `http://localhost:3000/api/seanceTypeCoefficient`,
+        {
+          seanceType: editingSeanceType,
+          value: parsedValue,
+        },
         { withCredentials: true }
       );
-
-      setSpecialities(
-        specialities.map((speciality) =>
-          speciality.id === editingId ? response.data : speciality
+      setCoefficients(
+        coefficients.map((coefficient) =>
+          coefficient.seanceType === editingSeanceType ? response.data : coefficient
         )
       );
-      setEditingId(null);
-      setFormData({ name: '' });
-      setSuccessMessage('Speciality updated successfully!');
+      setEditingSeanceType(null);
+      setFormData({ value: '' });
+      setSuccessMessage('Coefficient updated successfully!');
     } catch (error) {
-      setErrorMessage('Error updating speciality');
-      console.error(error);
+      const serverMessage =
+        error.response?.data?.message || 'Failed to update coefficient';
+      setErrorMessage(serverMessage);
+      console.error('Error updating coefficient:', error.response?.data || error);
     }
   };
 
   const resetView = () => {
-    setEditingId(null);
-    setIsAdding(false);
-    setFormData({ name: '' });
+    setEditingSeanceType(null);
+    setFormData({ value: '' });
   };
 
-  const confirmDelete = (speciality, e) => {
+  const confirmDelete = (coefficient, e) => {
     e.stopPropagation();
-    setSpecialityToDelete(speciality);
+    setCoefficientToDelete(coefficient);
   };
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:3000/api/speciality/${specialityToDelete.id}`, {
-        withCredentials: true,
-      });
-
-      setSpecialities(specialities.filter((speciality) => speciality.id !== specialityToDelete.id));
-      setSpecialityToDelete(null);
-      setSuccessMessage('Speciality deleted successfully!');
+      await axios.delete(
+        `http://localhost:3000/api/seanceTypeCoefficient/${coefficientToDelete.seanceType}`,
+        { withCredentials: true }
+      );
+      setCoefficients(
+        coefficients.filter(
+          (coefficient) => coefficient.seanceType !== coefficientToDelete.seanceType
+        )
+      );
+      setCoefficientToDelete(null);
+      setSuccessMessage('Coefficient deleted successfully!');
     } catch (error) {
-      setErrorMessage('Error deleting speciality');
-      console.error(error);
+      const serverMessage =
+        error.response?.data?.message || 'Failed to delete coefficient';
+      setErrorMessage(serverMessage);
+      console.error('Error deleting coefficient:', error.response?.data || error);
     }
   };
 
   const cancelDelete = () => {
-    setSpecialityToDelete(null);
+    setCoefficientToDelete(null);
   };
 
   return (
@@ -152,18 +147,20 @@ const SpecialitySettings = () => {
               icon={faCheckCircle}
               className={`h-5 w-5 mr-2 ${successMessage ? 'text-green-500' : 'text-red-500'}`}
             />
-            <p className="text-sm font-medium text-gray-700">{successMessage || errorMessage}</p>
+            <p className="text-sm font-medium text-gray-700">
+              {successMessage || errorMessage}
+            </p>
           </div>
         </div>
       )}
 
-      {specialityToDelete && (
+      {coefficientToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Deletion</h3>
             <p className="mb-6">
-              Are you sure you want to delete the <strong>{specialityToDelete.name}</strong> speciality?
-              This action cannot be undone.
+              Are you sure you want to delete the <strong>{coefficientToDelete.seanceType}</strong>{' '}
+              coefficient? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -185,48 +182,48 @@ const SpecialitySettings = () => {
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 inline-flex items-center">
-          <FontAwesomeIcon icon={faBook} className="mr-3 text-blue-600" />
+          <FontAwesomeIcon icon={faCalculator} className="mr-3 text-blue-600" />
           <button
             onClick={resetView}
             className={`hover:text-blue-600 ${
-              isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'
+              editingSeanceType !== null ? 'cursor-pointer' : 'cursor-default'
             }`}
           >
-            Specialities
+            Coefficients
           </button>
-          {(isAdding || editingId !== null) && (
+          {editingSeanceType !== null && (
             <>
               <FontAwesomeIcon icon={faChevronRight} className="mx-2 text-gray-500 text-sm" />
-              <span className="text-gray-600 font-medium">{editingId !== null ? 'Edit' : 'Add'}</span>
+              <span className="text-gray-600 font-medium">Edit</span>
             </>
           )}
         </h2>
-        {!isAdding && editingId === null && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Speciality
-          </button>
-        )}
       </div>
 
-      {(isAdding || editingId !== null) && (
+      {editingSeanceType !== null && (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-          <h3 className="text-lg font-medium mb-6">
-            {editingId !== null ? 'Edit Speciality' : 'Add New Speciality'}
-          </h3>
-          <div className="grid grid-cols-1 gap-6 mb-6">
+          <h3 className="text-lg font-medium mb-6">Edit Coefficient</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Speciality Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Seance Type</label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                value={editingSeanceType}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                disabled={true}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Coefficient Value</label>
+              <input
+                type="number"
+                name="value"
+                value={formData.value}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Computer Science"
+                placeholder="e.g. 1.5"
+                min="0.1"
+                step="0.1"
               />
             </div>
           </div>
@@ -239,24 +236,27 @@ const SpecialitySettings = () => {
               Cancel
             </button>
             <button
-              onClick={editingId !== null ? saveEdit : handleAdd}
+              onClick={saveEdit}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <FontAwesomeIcon icon={faSave} className="mr-2" />
-              {editingId !== null ? 'Save Changes' : 'Add Speciality'}
+              Save Changes
             </button>
           </div>
         </div>
       )}
 
-      {!isAdding && editingId === null && (
+      {editingSeanceType === null && (
         <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Speciality Name
+                    Seance Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Coefficient Value
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -264,15 +264,18 @@ const SpecialitySettings = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {specialities.length > 0 ? (
-                  specialities.map((speciality) => (
+                {coefficients.length > 0 ? (
+                  coefficients.map((coefficient) => (
                     <tr
-                      key={speciality.id}
-                      onClick={() => startEditing(speciality)}
+                      key={coefficient.seanceType}
+                      onClick={() => startEditing(coefficient)}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {speciality.name}
+                        {coefficient.seanceType}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {coefficient.value}
                       </td>
                       <td
                         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
@@ -282,7 +285,7 @@ const SpecialitySettings = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditing(speciality);
+                              startEditing(coefficient);
                             }}
                             className="text-blue-600 hover:text-blue-900"
                             title="Edit"
@@ -290,7 +293,7 @@ const SpecialitySettings = () => {
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
                           <button
-                            onClick={(e) => confirmDelete(speciality, e)}
+                            onClick={(e) => confirmDelete(coefficient, e)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
@@ -302,8 +305,8 @@ const SpecialitySettings = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No specialities found. Add your first speciality!
+                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No coefficients found.
                     </td>
                   </tr>
                 )}
@@ -316,4 +319,4 @@ const SpecialitySettings = () => {
   );
 };
 
-export default SpecialitySettings;
+export default CoefficientSettings;

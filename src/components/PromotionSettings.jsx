@@ -8,25 +8,27 @@ import {
   faTimes,
   faChevronRight,
   faCheckCircle,
-  faBook,
+  faStar,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const SpecialitySettings = () => {
+const PromotionSettings = () => {
+  const [promotions, setPromotions] = useState([]);
   const [specialities, setSpecialities] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ name: '' });
-  const [specialityToDelete, setSpecialityToDelete] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    specialityId: '',
+  });
+  const [promotionToDelete, setPromotionToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch all specialities on component mount
   useEffect(() => {
-    fetchSpecialities();
+    fetchSpecialities().then(fetchPromotions);
   }, []);
 
-  // Clear success/error messages after 3 seconds
   useEffect(() => {
     if (successMessage || errorMessage) {
       const timer = setTimeout(() => {
@@ -37,6 +39,19 @@ const SpecialitySettings = () => {
     }
   }, [successMessage, errorMessage]);
 
+  const fetchPromotions = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/promotion', {
+        withCredentials: true,
+      });
+      console.log('GET /api/promotion response:', response.data);
+      setPromotions(response.data);
+    } catch (error) {
+      setErrorMessage('Failed to fetch promotions');
+      console.error('Error fetching promotions:', error);
+    }
+  };
+
   const fetchSpecialities = async () => {
     try {
       const response = await axios.get('http://localhost:3000/api/speciality', {
@@ -44,8 +59,8 @@ const SpecialitySettings = () => {
       });
       setSpecialities(response.data);
     } catch (error) {
-      setErrorMessage('Error fetching specialities');
-      console.error(error);
+      setErrorMessage('Failed to fetch specialities');
+      console.error('Error fetching specialities:', error);
     }
   };
 
@@ -55,114 +70,150 @@ const SpecialitySettings = () => {
   };
 
   const handleAdd = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
+    if (!formData.name || !formData.specialityId || isNaN(parseInt(formData.specialityId))) {
+      setErrorMessage('Please fill all fields correctly');
       return;
     }
 
     try {
       const response = await axios.post(
-        'http://localhost:3000/api/speciality',
-        { name: formData.name },
+        'http://localhost:3000/api/promotion',
+        {
+          name: formData.name,
+          specialityId: parseInt(formData.specialityId),
+        },
         { withCredentials: true }
       );
+      console.log('POST /api/promotion response:', response.data);
 
-      setSpecialities([...specialities, response.data]);
-      setFormData({ name: '' });
+      const newPromotion = {
+        Promotion: {
+          id: response.data.Promotion?.id || response.data.id,
+          name: response.data.Promotion?.name || response.data.name,
+          specialityId: response.data.Promotion?.specialityId || response.data.specialityId,
+        },
+        Speciality: {
+          id: response.data.Speciality?.id || parseInt(formData.specialityId),
+          name:
+            response.data.Speciality?.name ||
+            specialities.find((spec) => spec.id === parseInt(formData.specialityId))?.name ||
+            'Unknown',
+        },
+      };
+      setPromotions([...promotions, newPromotion]);
+      setFormData({ name: '', specialityId: '' });
       setIsAdding(false);
-      setSuccessMessage('Speciality added successfully!');
+      setSuccessMessage('Promotion added successfully!');
     } catch (error) {
-      setErrorMessage('Error adding speciality');
-      console.error(error);
+      setErrorMessage('Failed to add promotion');
+      console.error('Error adding promotion:', error);
     }
   };
 
-  const startEditing = (speciality) => {
-    setEditingId(speciality.id);
-    setFormData({ name: speciality.name });
+  const startEditing = (promotion) => {
+    setEditingId(promotion.Promotion.id);
+    setFormData({
+      name: promotion.Promotion.name,
+      specialityId: promotion.Speciality.id.toString(),
+    });
   };
 
   const saveEdit = async () => {
-    if (!formData.name) {
-      setErrorMessage('Please fill the speciality name');
+    if (!formData.name || !formData.specialityId || isNaN(parseInt(formData.specialityId))) {
+      setErrorMessage('Please fill all fields correctly');
       return;
     }
 
     try {
       const response = await axios.put(
-        `http://localhost:3000/api/speciality/${editingId}`,
-        { name: formData.name },
+        `http://localhost:3000/api/promotion/${editingId}`,
+        {
+          name: formData.name,
+          specialityId: parseInt(formData.specialityId),
+        },
         { withCredentials: true }
       );
+      console.log('PUT /api/promotion response:', response.data);
 
-      setSpecialities(
-        specialities.map((speciality) =>
-          speciality.id === editingId ? response.data : speciality
+      const updatedPromotion = {
+        Promotion: {
+          id: response.data.Promotion?.id || response.data.id,
+          name: response.data.Promotion?.name || response.data.name,
+          specialityId: response.data.Promotion?.specialityId || response.data.specialityId,
+        },
+        Speciality: {
+          id: response.data.Speciality?.id || parseInt(formData.specialityId),
+          name:
+            response.data.Speciality?.name ||
+            specialities.find((spec) => spec.id === parseInt(formData.specialityId))?.name ||
+            'Unknown',
+        },
+      };
+      setPromotions(
+        promotions.map((promotion) =>
+          promotion.Promotion.id === editingId ? updatedPromotion : promotion
         )
       );
       setEditingId(null);
-      setFormData({ name: '' });
-      setSuccessMessage('Speciality updated successfully!');
+      setFormData({ name: '', specialityId: '' });
+      setSuccessMessage('Promotion updated successfully!');
     } catch (error) {
-      setErrorMessage('Error updating speciality');
-      console.error(error);
+      setErrorMessage('Failed to update promotion');
+      console.error('Error updating promotion:', error);
     }
   };
 
   const resetView = () => {
     setEditingId(null);
     setIsAdding(false);
-    setFormData({ name: '' });
+    setFormData({ name: '', specialityId: '' });
   };
 
-  const confirmDelete = (speciality, e) => {
+  const confirmDelete = (promotion, e) => {
     e.stopPropagation();
-    setSpecialityToDelete(speciality);
+    setPromotionToDelete(promotion.Promotion);
   };
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:3000/api/speciality/${specialityToDelete.id}`, {
+      await axios.delete(`http://localhost:3000/api/promotion/${promotionToDelete.id}`, {
         withCredentials: true,
       });
-
-      setSpecialities(specialities.filter((speciality) => speciality.id !== specialityToDelete.id));
-      setSpecialityToDelete(null);
-      setSuccessMessage('Speciality deleted successfully!');
+      setPromotions(promotions.filter((promotion) => promotion.Promotion.id !== promotionToDelete.id));
+      setPromotionToDelete(null);
+      setSuccessMessage('Promotion deleted successfully!');
     } catch (error) {
-      setErrorMessage('Error deleting speciality');
-      console.error(error);
+      setErrorMessage('Failed to delete promotion');
+      console.error('Error deleting promotion:', error);
     }
   };
 
   const cancelDelete = () => {
-    setSpecialityToDelete(null);
+    setPromotionToDelete(null);
   };
 
   return (
     <div className="space-y-6 relative">
       {(successMessage || errorMessage) && (
-        <div
-          className={`rounded-md p-3 border mb-6 ${
-            successMessage ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
-          }`}
-        >
+        <div className={`rounded-md p-3 border mb-6 ${successMessage ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
           <div className="flex items-center">
             <FontAwesomeIcon
               icon={faCheckCircle}
               className={`h-5 w-5 mr-2 ${successMessage ? 'text-green-500' : 'text-red-500'}`}
             />
-            <p className="text-sm font-medium text-gray-700">{successMessage || errorMessage}</p>
+            <p className="text-sm font-medium text-gray-700">
+              {successMessage || errorMessage}
+            </p>
           </div>
         </div>
       )}
 
-      {specialityToDelete && (
+      {promotionToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Deletion</h3>
             <p className="mb-6">
-              Are you sure you want to delete the <strong>{specialityToDelete.name}</strong> speciality?
+              Are you sure you want to delete the <strong>{promotionToDelete.name}</strong> promotion?
               This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
@@ -185,14 +236,12 @@ const SpecialitySettings = () => {
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 inline-flex items-center">
-          <FontAwesomeIcon icon={faBook} className="mr-3 text-blue-600" />
+          <FontAwesomeIcon icon={faStar} className="mr-3 text-blue-600" />
           <button
             onClick={resetView}
-            className={`hover:text-blue-600 ${
-              isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'
-            }`}
+            className={`hover:text-blue-600 ${isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'}`}
           >
-            Specialities
+            Promotions
           </button>
           {(isAdding || editingId !== null) && (
             <>
@@ -207,7 +256,7 @@ const SpecialitySettings = () => {
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Speciality
+            Add New Promotion
           </button>
         )}
       </div>
@@ -215,22 +264,38 @@ const SpecialitySettings = () => {
       {(isAdding || editingId !== null) && (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h3 className="text-lg font-medium mb-6">
-            {editingId !== null ? 'Edit Speciality' : 'Add New Speciality'}
+            {editingId !== null ? 'Edit Promotion' : 'Add New Promotion'}
           </h3>
-          <div className="grid grid-cols-1 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Speciality Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Promotion Name</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Computer Science"
+                placeholder="e.g. Senior Consultant"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Speciality</label>
+              <select
+                name="specialityId"
+                value={formData.specialityId}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Speciality</option>
+                {specialities.map((speciality) => (
+                  <option key={speciality.id} value={speciality.id}>
+                    {speciality.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 mt-6">
             <button
               onClick={resetView}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
@@ -243,7 +308,7 @@ const SpecialitySettings = () => {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <FontAwesomeIcon icon={faSave} className="mr-2" />
-              {editingId !== null ? 'Save Changes' : 'Add Speciality'}
+              {editingId !== null ? 'Save Changes' : 'Add Promotion'}
             </button>
           </div>
         </div>
@@ -256,7 +321,10 @@ const SpecialitySettings = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Speciality Name
+                    Promotion Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Speciality
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -264,15 +332,18 @@ const SpecialitySettings = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {specialities.length > 0 ? (
-                  specialities.map((speciality) => (
+                {promotions.length > 0 ? (
+                  promotions.map((promotion, index) => (
                     <tr
-                      key={speciality.id}
-                      onClick={() => startEditing(speciality)}
+                      key={promotion.Promotion?.id || index}
+                      onClick={() => promotion.Promotion && startEditing(promotion)}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {speciality.name}
+                        {promotion.Promotion?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {promotion.Speciality?.name || 'N/A'}
                       </td>
                       <td
                         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
@@ -282,7 +353,7 @@ const SpecialitySettings = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              startEditing(speciality);
+                              promotion.Promotion && startEditing(promotion);
                             }}
                             className="text-blue-600 hover:text-blue-900"
                             title="Edit"
@@ -290,7 +361,7 @@ const SpecialitySettings = () => {
                             <FontAwesomeIcon icon={faEdit} />
                           </button>
                           <button
-                            onClick={(e) => confirmDelete(speciality, e)}
+                            onClick={(e) => promotion.Promotion && confirmDelete(promotion, e)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete"
                           >
@@ -302,8 +373,8 @@ const SpecialitySettings = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No specialities found. Add your first speciality!
+                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No promotions found. Add your first promotion!
                     </td>
                   </tr>
                 )}
@@ -316,4 +387,4 @@ const SpecialitySettings = () => {
   );
 };
 
-export default SpecialitySettings;
+export default PromotionSettings;
