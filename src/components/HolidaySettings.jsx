@@ -16,7 +16,7 @@ const HolidaySettings = () => {
   const [holidays, setHolidays] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ startDate: '', endDate: '' });
+  const [formData, setFormData] = useState({ name: '', startDate: '', endDate: '' });
   const [holidayToDelete, setHolidayToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -55,7 +55,7 @@ const HolidaySettings = () => {
   };
 
   const handleAdd = async () => {
-    if (!formData.startDate || !formData.endDate) {
+    if (!formData.name || !formData.startDate || !formData.endDate) {
       setErrorMessage('Please fill all fields');
       return;
     }
@@ -64,13 +64,14 @@ const HolidaySettings = () => {
       const response = await axios.post(
         'http://localhost:3000/api/holiday',
         {
+          name: formData.name,
           startDate: formData.startDate,
           endDate: formData.endDate,
         },
         { withCredentials: true }
       );
       setHolidays([...holidays, response.data]);
-      setFormData({ startDate: '', endDate: '' });
+      setFormData({ name: '', startDate: '', endDate: '' });
       setIsAdding(false);
       setSuccessMessage('Holiday added successfully!');
     } catch (error) {
@@ -82,33 +83,32 @@ const HolidaySettings = () => {
   const startEditing = (holiday) => {
     setEditingId(holiday.id);
     setFormData({
+      name: holiday.name,
       startDate: holiday.startDate,
       endDate: holiday.endDate,
     });
   };
 
   const saveEdit = async () => {
-    if (!formData.startDate || !formData.endDate) {
+    if (!formData.name || !formData.startDate || !formData.endDate) {
       setErrorMessage('Please fill all fields');
       return;
     }
 
     try {
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:3000/api/holiday/${editingId}`,
         {
+          name: formData.name,
           startDate: formData.startDate,
           endDate: formData.endDate,
         },
         { withCredentials: true }
       );
-      setHolidays(
-        holidays.map((holiday) =>
-          holiday.id === editingId ? response.data : holiday
-        )
-      );
+      // Refetch holidays to ensure the UI reflects the latest backend data
+      await fetchHolidays();
       setEditingId(null);
-      setFormData({ startDate: '', endDate: '' });
+      setFormData({ name: '', startDate: '', endDate: '' });
       setSuccessMessage('Holiday updated successfully!');
     } catch (error) {
       setErrorMessage('Failed to update holiday');
@@ -119,7 +119,7 @@ const HolidaySettings = () => {
   const resetView = () => {
     setEditingId(null);
     setIsAdding(false);
-    setFormData({ startDate: '', endDate: '' });
+    setFormData({ name: '', startDate: '', endDate: '' });
   };
 
   const confirmDelete = (holiday, e) => {
@@ -168,7 +168,7 @@ const HolidaySettings = () => {
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4">Confirm Deletion</h3>
             <p className="mb-6">
-              Are you sure you want to delete the holiday from{' '}
+              Are you sure you want to delete the holiday <strong>{holidayToDelete.name}</strong> from{' '}
               <strong>{holidayToDelete.startDate}</strong> to{' '}
               <strong>{holidayToDelete.endDate}</strong>? This action cannot be undone.
             </p>
@@ -225,6 +225,17 @@ const HolidaySettings = () => {
             {editingId !== null ? 'Edit Holiday' : 'Add New Holiday'}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Holiday Name</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Enter holiday name"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
               <input
@@ -272,6 +283,9 @@ const HolidaySettings = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Start Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -291,6 +305,9 @@ const HolidaySettings = () => {
                       className="hover:bg-gray-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {holiday.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {holiday.startDate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -324,7 +341,7 @@ const HolidaySettings = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                       No holidays found. Add your first holiday!
                     </td>
                   </tr>

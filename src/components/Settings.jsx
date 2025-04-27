@@ -35,7 +35,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-144 bg-gray-50">
       {/* White Sidebar */}
       <div className="w-64 bg-white border-r border-gray-200 shadow-sm">
         <div className="p-4 border-b border-gray-200">

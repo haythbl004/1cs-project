@@ -21,6 +21,7 @@ const PromotionSettings = () => {
     name: '',
     specialityId: '',
   });
+  const [useSpeciality, setUseSpeciality] = useState(true);
   const [promotionToDelete, setPromotionToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -70,38 +71,45 @@ const PromotionSettings = () => {
   };
 
   const handleAdd = async () => {
-    if (!formData.name || !formData.specialityId || isNaN(parseInt(formData.specialityId))) {
-      setErrorMessage('Please fill all fields correctly');
+    if (!formData.name) {
+      setErrorMessage('Please fill the promotion name');
+      return;
+    }
+    if (useSpeciality && (!formData.specialityId || isNaN(parseInt(formData.specialityId)))) {
+      setErrorMessage('Please select a speciality');
       return;
     }
 
     try {
-      const response = await axios.post(
-        'http://localhost:3000/api/promotion',
-        {
-          name: formData.name,
-          specialityId: parseInt(formData.specialityId),
-        },
-        { withCredentials: true }
-      );
+      const payload = { name: formData.name };
+      if (useSpeciality) {
+        payload.specialityId = parseInt(formData.specialityId);
+      }
+
+      const response = await axios.post('http://localhost:3000/api/promotion', payload, {
+        withCredentials: true,
+      });
       console.log('POST /api/promotion response:', response.data);
+
+      const speciality = useSpeciality
+        ? specialities.find((spec) => spec.id === parseInt(formData.specialityId)) || {
+            id: parseInt(formData.specialityId),
+            name: 'Unknown',
+          }
+        : { id: null, name: 'None' };
 
       const newPromotion = {
         Promotion: {
-          id: response.data.Promotion?.id || response.data.id,
-          name: response.data.Promotion?.name || response.data.name,
-          specialityId: response.data.Promotion?.specialityId || response.data.specialityId,
+          id: response.data.id || Date.now(),
+          name: formData.name,
+          specialityId: useSpeciality ? parseInt(formData.specialityId) : null,
         },
-        Speciality: {
-          id: response.data.Speciality?.id || parseInt(formData.specialityId),
-          name:
-            response.data.Speciality?.name ||
-            specialities.find((spec) => spec.id === parseInt(formData.specialityId))?.name ||
-            'Unknown',
-        },
+        Speciality: speciality,
       };
+
       setPromotions([...promotions, newPromotion]);
       setFormData({ name: '', specialityId: '' });
+      setUseSpeciality(true);
       setIsAdding(false);
       setSuccessMessage('Promotion added successfully!');
     } catch (error) {
@@ -114,48 +122,57 @@ const PromotionSettings = () => {
     setEditingId(promotion.Promotion.id);
     setFormData({
       name: promotion.Promotion.name,
-      specialityId: promotion.Speciality.id.toString(),
+      specialityId: promotion.Promotion.specialityId
+        ? promotion.Promotion.specialityId.toString()
+        : '',
     });
+    setUseSpeciality(!!promotion.Promotion.specialityId);
   };
 
   const saveEdit = async () => {
-    if (!formData.name || !formData.specialityId || isNaN(parseInt(formData.specialityId))) {
-      setErrorMessage('Please fill all fields correctly');
+    if (!formData.name) {
+      setErrorMessage('Please fill the promotion name');
+      return;
+    }
+    if (useSpeciality && (!formData.specialityId || isNaN(parseInt(formData.specialityId)))) {
+      setErrorMessage('Please select a speciality');
       return;
     }
 
     try {
-      const response = await axios.put(
-        `http://localhost:3000/api/promotion/${editingId}`,
-        {
-          name: formData.name,
-          specialityId: parseInt(formData.specialityId),
-        },
-        { withCredentials: true }
-      );
-      console.log('PUT /api/promotion response:', response.data);
+      const payload = { name: formData.name };
+      if (useSpeciality) {
+        payload.specialityId = parseInt(formData.specialityId);
+      }
 
-      const updatedPromotion = {
-        Promotion: {
-          id: response.data.Promotion?.id || response.data.id,
-          name: response.data.Promotion?.name || response.data.name,
-          specialityId: response.data.Promotion?.specialityId || response.data.specialityId,
-        },
-        Speciality: {
-          id: response.data.Speciality?.id || parseInt(formData.specialityId),
-          name:
-            response.data.Speciality?.name ||
-            specialities.find((spec) => spec.id === parseInt(formData.specialityId))?.name ||
-            'Unknown',
-        },
-      };
+      await axios.put(`http://localhost:3000/api/promotion/${editingId}`, payload, {
+        withCredentials: true,
+      });
+
+      const speciality = useSpeciality
+        ? specialities.find((spec) => spec.id === parseInt(formData.specialityId)) || {
+            id: parseInt(formData.specialityId),
+            name: 'Unknown',
+          }
+        : { id: null, name: 'None' };
+
       setPromotions(
         promotions.map((promotion) =>
-          promotion.Promotion.id === editingId ? updatedPromotion : promotion
+          promotion.Promotion.id === editingId
+            ? {
+                Promotion: {
+                  id: editingId,
+                  name: formData.name,
+                  specialityId: useSpeciality ? parseInt(formData.specialityId) : null,
+                },
+                Speciality: speciality,
+              }
+            : promotion
         )
       );
       setEditingId(null);
       setFormData({ name: '', specialityId: '' });
+      setUseSpeciality(true);
       setSuccessMessage('Promotion updated successfully!');
     } catch (error) {
       setErrorMessage('Failed to update promotion');
@@ -167,6 +184,7 @@ const PromotionSettings = () => {
     setEditingId(null);
     setIsAdding(false);
     setFormData({ name: '', specialityId: '' });
+    setUseSpeciality(true);
   };
 
   const confirmDelete = (promotion, e) => {
@@ -195,15 +213,17 @@ const PromotionSettings = () => {
   return (
     <div className="space-y-6 relative">
       {(successMessage || errorMessage) && (
-        <div className={`rounded-md p-3 border mb-6 ${successMessage ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+        <div
+          className={`rounded-md p-3 border mb-6 ${
+            successMessage ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'
+          }`}
+        >
           <div className="flex items-center">
             <FontAwesomeIcon
               icon={faCheckCircle}
               className={`h-5 w-5 mr-2 ${successMessage ? 'text-green-500' : 'text-red-500'}`}
             />
-            <p className="text-sm font-medium text-gray-700">
-              {successMessage || errorMessage}
-            </p>
+            <p className="text-sm font-medium text-gray-700">{successMessage || errorMessage}</p>
           </div>
         </div>
       )}
@@ -239,7 +259,9 @@ const PromotionSettings = () => {
           <FontAwesomeIcon icon={faStar} className="mr-3 text-blue-600" />
           <button
             onClick={resetView}
-            className={`hover:text-blue-600 ${isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`hover:text-blue-600 ${
+              isAdding || editingId !== null ? 'cursor-pointer' : 'cursor-default'
+            }`}
           >
             Promotions
           </button>
@@ -279,20 +301,30 @@ const PromotionSettings = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Speciality</label>
-              <select
-                name="specialityId"
-                value={formData.specialityId}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Speciality</option>
-                {specialities.map((speciality) => (
-                  <option key={speciality.id} value={speciality.id}>
-                    {speciality.name}
-                  </option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <input
+                  type="checkbox"
+                  checked={useSpeciality}
+                  onChange={(e) => setUseSpeciality(e.target.checked)}
+                  className="mr-2"
+                />
+                Include Speciality
+              </label>
+              {useSpeciality && (
+                <select
+                  name="specialityId"
+                  value={formData.specialityId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Speciality</option>
+                  {specialities.map((speciality) => (
+                    <option key={speciality.id} value={speciality.id}>
+                      {speciality.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
           <div className="flex justify-end space-x-3 mt-6">
@@ -343,7 +375,7 @@ const PromotionSettings = () => {
                         {promotion.Promotion?.name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {promotion.Speciality?.name || 'N/A'}
+                        {promotion.Speciality?.name || 'None'}
                       </td>
                       <td
                         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"

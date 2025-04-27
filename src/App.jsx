@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import { useState , useEffect} from 'react';
+import ScheduleManagement from './components/ScheduleManagement';
 
 function App() {
   const [user, setUser] = useState(null);

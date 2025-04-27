@@ -60,12 +60,12 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mb-3">
+        <div className="mx-auto bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-3">
           <FontAwesomeIcon 
             icon={faUniversity} 
-            className="text-3xl text-indigo-600" 
+            className="text-3xl text-blue-600" 
           />
         </div>
         <h2 className="mt-2 text-center text-3xl font-bold text-gray-900">
@@ -77,7 +77,7 @@ const Login = ({ setUser }) => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-lg sm:px-10 border-l-4 border-indigo-600">
+        <div className="bg-white py-8 px-6 shadow-xl rounded-lg sm:px-10 border-l-4 border-blue-600">
           {successMessage && (
             <div className="rounded-md bg-green-50 p-3 border border-green-100 mb-6">
               <div className="flex items-center">
@@ -126,7 +126,7 @@ const Login = ({ setUser }) => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="py-3 pl-10 block w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                  className="py-3 pl-10 block w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm placeholder-gray-400"
                   placeholder="admin@university.edu"
                 />
               </div>
@@ -151,7 +151,7 @@ const Login = ({ setUser }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="py-3 pl-10 block w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm placeholder-gray-400"
+                  className="py-3 pl-10 block w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm placeholder-gray-400"
                   placeholder="••••••••"
                 />
               </div>
@@ -163,7 +163,7 @@ const Login = ({ setUser }) => {
                   id="remember-device"
                   name="remember-device"
                   type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-device" className="ml-2 block text-xs text-gray-700">
                   Remember this device
@@ -175,7 +175,7 @@ const Login = ({ setUser }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full hover:cursor-pointer flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-70"
+                className="w-full hover:cursor-pointer flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 disabled:opacity-70"
               >
                 {isLoading ? (
                   <>

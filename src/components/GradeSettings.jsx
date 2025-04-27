@@ -45,21 +45,29 @@ const GradeSettings = () => {
     try {
       const response = await axios.get('http://localhost:3000/api/grade/get', {
         withCredentials: true,
+        headers: { 'Cache-Control': 'no-cache' },
       });
+      console.log('Raw API Response:', JSON.stringify(response.data, null, 2));
       if (!Array.isArray(response.data)) {
         throw new Error('Invalid API response: Expected an array');
       }
-      const grades = response.data.map((grade) => ({
-        id: grade.id,
-        gradeName: grade.gradeName || '',
-        pricePerHour: grade.pricePerHour !== undefined ? grade.pricePerHour : 0,
-        charge: grade.charge !== undefined ? grade.charge : 0,
-      }));
+      const grades = response.data.map((grade, index) => {
+        console.log(`Grade ${index} Keys:`, Object.keys(grade));
+        return {
+          id: grade.id ?? grade._id ?? `temp-id-${index}`,
+          gradeName: grade.GradeName ?? 'Unnamed Grade',
+          pricePerHour: Number(grade.PricePerHour) || 0,
+          charge: Number(grade.charge) || 0,
+        };
+      });
+      console.log('Mapped Grades:', grades);
       setGrades(grades);
-      console.log(grades);
+      if (grades.length === 0) {
+        setErrorMessage('No grades found in the database.');
+      }
     } catch (error) {
-      setErrorMessage('Failed to fetch grades');
-      console.error('Error fetching grades:', error);
+      setErrorMessage('Failed to fetch grades. Please check the server.');
+      console.error('Error fetching grades:', error.message, error.response?.data);
     }
   };
 
@@ -69,28 +77,38 @@ const GradeSettings = () => {
   };
 
   const handleAdd = async () => {
-    if (!formData.gradeName || !formData.pricePerHour || !formData.charge) {
+    if (!formData.gradeName.trim() || !formData.pricePerHour || !formData.charge) {
       setErrorMessage('Please fill all fields');
+      return;
+    }
+    const pricePerHour = parseFloat(formData.pricePerHour);
+    const charge = parseFloat(formData.charge);
+    if (isNaN(pricePerHour) || isNaN(charge) || pricePerHour < 0 || charge < 0) {
+      setErrorMessage('Price per hour and charge must be non-negative numbers');
       return;
     }
 
     try {
+      const payload = {
+        gradeName: formData.gradeName.trim(),
+        pricePerHour,
+        charge,
+      };
+      console.log('Add Grade Payload:', payload);
       const response = await axios.post(
         'http://localhost:3000/api/grade/create',
-        {
-          gradeName: formData.gradeName,
-          pricePerHour: parseFloat(formData.pricePerHour),
-          charge: parseFloat(formData.charge),
-        },
+        payload,
         { withCredentials: true }
       );
-      setGrades([...grades, response.data]);
+      console.log('Add Grade Response:', response.data);
+      await fetchGrades();
       setFormData({ gradeName: '', pricePerHour: '', charge: '' });
       setIsAdding(false);
       setSuccessMessage('Grade added successfully!');
     } catch (error) {
-      setErrorMessage('Failed to add grade');
-      console.error('Error adding grade:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to add grade';
+      setErrorMessage(`Failed to add grade: ${errorMsg}`);
+      console.error('Error adding grade:', error.message, error.response?.data);
     }
   };
 
@@ -104,33 +122,39 @@ const GradeSettings = () => {
   };
 
   const saveEdit = async () => {
-    if (!formData.gradeName || !formData.pricePerHour || !formData.charge) {
+    if (!formData.gradeName.trim() || !formData.pricePerHour || !formData.charge) {
       setErrorMessage('Please fill all fields');
+      return;
+    }
+    const pricePerHour = parseFloat(formData.pricePerHour);
+    const charge = parseFloat(formData.charge);
+    if (isNaN(pricePerHour) || isNaN(charge) || pricePerHour < 0 || charge < 0) {
+      setErrorMessage('Price per hour and charge must be non-negative numbers');
       return;
     }
 
     try {
+      const payload = {
+        id: editingId,
+        gradeName: formData.gradeName.trim(),
+        pricePerHour,
+        charge,
+      };
+      console.log('Update Grade Payload:', payload);
       const response = await axios.put(
         'http://localhost:3000/api/grade/update',
-        {
-          id: editingId,
-          gradeName: formData.gradeName,
-          pricePerHour: parseFloat(formData.pricePerHour),
-          charge: parseFloat(formData.charge),
-        },
+        payload,
         { withCredentials: true }
       );
-      setGrades(
-        grades.map((grade) =>
-          grade.id === editingId ? response.data : grade
-        )
-      );
+      console.log('Update Grade Response:', response.data);
+      await fetchGrades();
       setEditingId(null);
       setFormData({ gradeName: '', pricePerHour: '', charge: '' });
       setSuccessMessage('Grade updated successfully!');
     } catch (error) {
-      setErrorMessage('Failed to update grade');
-      console.error('Error updating grade:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to update grade';
+      setErrorMessage(`Failed to update grade: ${errorMsg}`);
+      console.error('Error updating grade:', error.message, error.response?.data);
     }
   };
 
@@ -147,16 +171,20 @@ const GradeSettings = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete('http://localhost:3000/api/grade/delete', {
-        data: { id: gradeToDelete.id },
+      const payload = { id: gradeToDelete.id };
+      console.log('Delete Grade Payload:', payload);
+      const response = await axios.delete('http://localhost:3000/api/grade/delete', {
+        data: payload,
         withCredentials: true,
       });
-      setGrades(grades.filter((grade) => grade.id !== gradeToDelete.id));
+      console.log('Delete Grade Response:', response.data);
+      await fetchGrades();
       setGradeToDelete(null);
       setSuccessMessage('Grade deleted successfully!');
     } catch (error) {
-      setErrorMessage('Failed to delete grade');
-      console.error('Error deleting grade:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to delete grade';
+      setErrorMessage(`Failed to delete grade: ${errorMsg}`);
+      console.error('Error deleting grade:', error.message, error.response?.data);
     }
   };
 

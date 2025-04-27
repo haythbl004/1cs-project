@@ -14,6 +14,7 @@ import {
 import axios from 'axios';
 import TeacherManagement from './TeacherManagement';
 import Settings from './Settings';
+import ScheduleManagement from './ScheduleManagement';
 
 const Dashboard = ({ user, setUser }) => {
   const [activeTab, setActiveTab] = useState('teachers');
@@ -245,26 +246,7 @@ const Dashboard = ({ user, setUser }) => {
       <div className="">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'planning' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-blue-500" />
-                Academic Planning
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-700">Academic Calendar</h3>
-                  <p className="text-sm text-gray-500 mt-2">View and manage university events</p>
-                </div>
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-700">Course Scheduling</h3>
-                  <p className="text-sm text-gray-500 mt-2">Arrange classes and rooms</p>
-                </div>
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-700">Examination Dates</h3>
-                  <p className="text-sm text-gray-500 mt-2">Set and modify exam schedules</p>
-                </div>
-              </div>
-            </div>
+            <ScheduleManagement user={user} setUser={setUser}/>
           )}
 
           {activeTab === 'teachers' && (

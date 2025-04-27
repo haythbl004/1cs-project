@@ -87,19 +87,20 @@ const SpecialitySettings = () => {
       setErrorMessage('Please fill the speciality name');
       return;
     }
-
+  
     try {
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:3000/api/speciality/${editingId}`,
         { name: formData.name },
         { withCredentials: true }
       );
-
+  
       setSpecialities(
         specialities.map((speciality) =>
-          speciality.id === editingId ? response.data : speciality
+          speciality.id === editingId ? { ...speciality, name: formData.name } : speciality
         )
       );
+  
       setEditingId(null);
       setFormData({ name: '' });
       setSuccessMessage('Speciality updated successfully!');

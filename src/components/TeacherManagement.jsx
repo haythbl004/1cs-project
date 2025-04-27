@@ -83,7 +83,7 @@ const CustomDropdown = ({ label, options, selectedValue, onChange, name }) => {
                 {selectedValue?.id === option.id && (
                   <span
                     className={`absolute inset-y-0 right-0 flex items-center pr-4 ${
-                      selectedValue?.id === option.id ? 'text-white' : 'text-indigo-600'
+                      selectedValue?.id === option.id ? 'text-white' : 'text-blue-600'
                     }`}
                   >
                     <FontAwesomeIcon icon={faCheck} className="size-5 text-black" />
@@ -213,7 +213,7 @@ const TeacherManagement = ({ user, setUser }) => {
         lastName: selectedTeacher.lastName,
         email: selectedTeacher.email,
         role: 'teacher',
-        gradeID: selectedTeacher.grade?.id,
+        gradeId: selectedTeacher.grade?.id,
       };
       console.log(updatedTeacher)
       await axios.put('http://localhost:3000/api/teacher/update', updatedTeacher, {
@@ -435,7 +435,7 @@ const TeacherManagement = ({ user, setUser }) => {
                       <td className="px-6 py-4 whitespace-nowrap">{teacher.lastName}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{teacher.gradeName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-center items-center space-x-3">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-3">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
