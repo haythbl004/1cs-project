@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'; // Add useEffect and useRef
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -9,20 +9,36 @@ import {
   faCog,
   faSignOutAlt,
   faBars,
+  faUniversity,
   faTimes,
+  faHome
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import TeacherManagement from './TeacherManagement';
 import Settings from './Settings';
 import ScheduleManagement from './ScheduleManagement';
+import Profile from './Profile';
+import Home from './Home';
 
 const Dashboard = ({ user, setUser }) => {
-  const [activeTab, setActiveTab] = useState('teachers');
+  const [activeTab, setActiveTab] = useState('home');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const userMenuRef = useRef(null); // Ref to track the user menu
+  const userMenuRef = useRef(null);
 
+  // useEffect is now unconditional
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Check authentication after hooks
   if (!user || user.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
@@ -38,21 +54,6 @@ const Dashboard = ({ user, setUser }) => {
     }
   };
 
-  // Close user menu when clicking outside
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
@@ -62,19 +63,28 @@ const Dashboard = ({ user, setUser }) => {
             {/* Left side - Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <img
-                  className="h-8 w-auto"
-                  src="/university-logo.png"
-                  alt="University Logo"
-                />
-                <span className="ml-2 text-xl font-bold text-blue-800 hidden md:block">
-                  University Name
-                </span>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  <FontAwesomeIcon icon={faUniversity} className="mr-2 text-blue-600" />
+                  University Dashboard
+                </h1>
               </div>
             </div>
             <div className="flex">
               {/* Center - Navigation Links */}
               <div className="hidden md:flex md:items-center md:space-x-4 md:ml-6">
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    activeTab === 'home'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  aria-selected={activeTab === 'home'}
+                  role="tab"
+                >
+                  <FontAwesomeIcon icon={faHome} className="mr-2" />
+                  Home
+                </button>
                 <button
                   onClick={() => setActiveTab('planning')}
                   className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium ${
@@ -136,7 +146,7 @@ const Dashboard = ({ user, setUser }) => {
                       <a
                         onClick={() => {
                           setActiveTab('myProfile');
-                          setIsUserMenuOpen(false); // Close menu on click
+                          setIsUserMenuOpen(false);
                         }}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:cursor-pointer"
                       >
@@ -146,7 +156,7 @@ const Dashboard = ({ user, setUser }) => {
                       <a
                         onClick={() => {
                           setActiveTab('settings');
-                          setIsUserMenuOpen(false); // Close menu on click
+                          setIsUserMenuOpen(false);
                         }}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:cursor-pointer"
                       >
@@ -156,7 +166,7 @@ const Dashboard = ({ user, setUser }) => {
                       <button
                         onClick={() => {
                           handleLogout();
-                          setIsUserMenuOpen(false); // Close menu on click
+                          setIsUserMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:cursor-pointer"
                       >
@@ -189,6 +199,22 @@ const Dashboard = ({ user, setUser }) => {
         {isMobileMenuOpen && (
           <div className="md:hidden" id="mobile-menu">
             <div className="pt-2 pb-3 space-y-1">
+            <button
+                onClick={() => {
+                  setActiveTab('planning');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium w-full text-left ${
+                  activeTab === 'home'
+                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                }`}
+                aria-selected={activeTab === 'home'}
+                role="tab"
+              >
+                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+                Home
+              </button>
               <button
                 onClick={() => {
                   setActiveTab('planning');
@@ -246,19 +272,19 @@ const Dashboard = ({ user, setUser }) => {
       <div className="">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'planning' && (
-            <ScheduleManagement user={user} setUser={setUser}/>
+            <ScheduleManagement user={user} setUser={setUser} />
           )}
 
           {activeTab === 'teachers' && (
             <TeacherManagement user={user} setUser={setUser} />
           )}
 
-          {activeTab === 'settings' && (
-            <Settings />
-          )}
+          {activeTab === 'home' && <Home setActiveTab={setActiveTab}/>}
+
+          {activeTab === 'settings' && <Settings />}
 
           {activeTab === 'myProfile' && (
-            <TeacherManagement user={user} setUser={setUser} />
+            <Profile user={user} />
           )}
 
           {activeTab === 'payment' && (

@@ -3,12 +3,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt, faPlus, faAngleRight } from '@fortawesome/free-solid-svg-icons';
 
 // Import required components
-import ScheduleList from './planning page/ScheduleList';
-import ScheduleAdd from './planning page/ScheduleAdd';
-import ScheduleEdit from './planning page/ScheduleEdit';
-import SessionList from './planning page/SessionList';
-import Planning from './planning page/Planning';
-import ViewPlanning from './planning page/ViewPlanning';
+import ScheduleList from './planning pages/ScheduleList';
+import ScheduleAdd from './planning pages/ScheduleAdd';
+import ScheduleEdit from './planning pages/ScheduleEdit';
+import SessionList from './planning pages/SessionList';
+import Planning from './planning pages/Planning';
+import ViewPlanning from './planning pages/ViewPlanning';
 
 const ScheduleManagement = ({ user, setUser }) => {
   const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'sessionList', 'planning', 'planning-add', 'planning-edit'
@@ -192,7 +192,7 @@ const ScheduleManagement = ({ user, setUser }) => {
       )}
 
       {viewMode === 'edit' && selectedSchedule && (
-        <ScheduleEdit scheduleId={selectedSchedule.id} schedule={selectedSchedule}/>
+        <ScheduleEdit scheduleId={selectedSchedule.id} scheduleinfo={selectedSchedule} setViewMode={setViewMode}/>
       )}
 
       {viewMode === 'sessionList' && selectedSchedule && (

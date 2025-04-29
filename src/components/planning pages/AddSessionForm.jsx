@@ -127,7 +127,7 @@ const AddSessionForm = ({ days, timeSlots, onSave, sessionId, onClose, onSession
 
   return (
     <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
-      <h3 className="text-lg font-medium mb-4">Add New Session</h3>
+      <h3 className="text-lg font-medium mb-2">Add New Session</h3>
       {error && <div className="text-red-600 mb-4">{error}</div>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

@@ -11,6 +11,10 @@
   #root {
     font-family: "Poppins", sans-serif;
   }
+
+  body::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer utilities {

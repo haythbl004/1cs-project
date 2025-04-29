@@ -254,7 +254,7 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
                             <div className="truncate">Teacher: {session.teacherName}</div>
                             <div className="truncate">Type: {session.type}</div>
                             <div className="truncate">Group: {session.group}</div>
-                            <div className="truncate text-gray-500">Location: {session.location}</div>
+                            <div className="truncate">Room: {session.location}</div>
                           </div>
                         ))}
                       </div>

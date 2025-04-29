@@ -22,6 +22,8 @@ const SessionList = ({ user, setUser, schedule, onViewPlanning, onViewPlanningDe
   const [editForm, setEditForm] = useState({ startDate: '', endDate: '' });
   const [newSessionForm, setNewSessionForm] = useState({ startDate: '', endDate: '' });
   const [showNewSessionForm, setShowNewSessionForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const sessionsPerPage = 4; // Same as patientsPerPage in Pending component
 
   useEffect(() => {
     console.log('SessionList: useEffect triggered', { user, schedule });
@@ -47,6 +49,7 @@ const SessionList = ({ user, setUser, schedule, onViewPlanning, onViewPlanningDe
         );
         const data = Array.isArray(response.data) ? response.data : [response.data].filter(Boolean);
         setSessions(data);
+        setCurrentPage(1); // Reset to first page when sessions are fetched
         console.log('SessionList: Sessions fetched', data);
       } catch (err) {
         console.error('SessionList: Failed to fetch sessions:', err);
@@ -75,6 +78,31 @@ const SessionList = ({ user, setUser, schedule, onViewPlanning, onViewPlanningDe
     }
   }, [errorMessage, successMessage]);
 
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(sessions.length / sessionsPerPage));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const indexOfFirstSession = (safePage - 1) * sessionsPerPage;
+  const indexOfLastSession = indexOfFirstSession + sessionsPerPage;
+  const currentSessions = sessions.slice(indexOfFirstSession, indexOfLastSession);
+
+  useEffect(() => {
+    if (currentPage !== safePage) {
+      setCurrentPage(safePage);
+    }
+  }, [currentPage, safePage]);
+
+  const handleNext = () => {
+    if (safePage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (safePage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
   const handleDeleteSession = async (sessionId) => {
     if (!window.confirm('Are you sure you want to delete this session?')) {
       return;
@@ -86,6 +114,10 @@ const SessionList = ({ user, setUser, schedule, onViewPlanning, onViewPlanningDe
       });
       setSessions((prev) => prev.filter((session) => session.id !== sessionId));
       setSuccessMessage('Session deleted successfully!');
+      // Adjust current page if necessary after deletion
+      if (currentSessions.length === 1 && safePage > 1) {
+        setCurrentPage((prev) => prev - 1);
+      }
       console.log('SessionList: Session deleted', sessionId);
     } catch (err) {
       console.error('SessionList: Failed to delete session:', err);
@@ -368,166 +400,194 @@ const SessionList = ({ user, setUser, schedule, onViewPlanning, onViewPlanningDe
           </form>
         )}
 
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Finish Date
-                </th>
-                <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Closed
-                </th>
-                <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sessions.length === 0 ? (
+        <div className="bg-white shadow rounded-lg overflow-hidden relative">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
-                    No sessions found for this schedule.
-                  </td>
+                  <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Start Date
+                  </th>
+                  <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Finish Date
+                  </th>
+                  <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Closed
+                  </th>
+                  <th className="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                sessions.map((session) => (
-                  <tr
-                    key={session.id}
-                    className="hover:bg-gray-100 cursor-pointer"
-                    onClick={() => handleRowClick(session)}
-                  >
-                    {editingSessionId === session.id ? (
-                      <>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center border border-gray-300 rounded-md shadow-sm">
-                            <FontAwesomeIcon
-                              icon={faCalendarAlt}
-                              className="mx-3 text-gray-400"
-                            />
-                            <input
-                              type="date"
-                              name="startDate"
-                              value={editForm.startDate}
-                              onChange={handleInputChange}
-                              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            />
-                          </div>
-                        </td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center border border-gray-300 rounded-md shadow-sm">
-                            <FontAwesomeIcon
-                              icon={faCalendarAlt}
-                              className="mx-3 text-gray-400"
-                            />
-                            <input
-                              type="date"
-                              name="endDate"
-                              value={editForm.endDate}
-                              onChange={handleInputChange}
-                              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            />
-                          </div>
-                        </td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">
-                          {session.closed ? 'Yes' : 'No'}
-                        </td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-2">
-                          <button
-                            onClick={() => handleUpdateSession(session.id)}
-                            className="text-gray-600 hover:text-gray-800 p-1"
-                            title="Save Changes"
-                            aria-label="Save Changes"
-                          >
-                            <FontAwesomeIcon icon={faSave} />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-gray-600 hover:text-gray-800 p-1"
-                            title="Cancel"
-                            aria-label="Cancel"
-                          >
-                            <FontAwesomeIcon icon={faTimes} />
-                          </button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">{session.startDate}</td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">
-                          {session.finishDate || 'N/A'}
-                        </td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap">
-                          {session.closed ? 'Yes' : 'No'}
-                        </td>
-                        <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-2">
-                          {session.closed ? (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSession(session.id);
-                                }}
-                                className="text-gray-600 hover:text-gray-800 p-1"
-                                title="Delete Session"
-                                aria-label="Delete Session"
-                              >
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
-                              <button
-                                onClick={(e) => handleViewPlanningDetails(e, session)}
-                                className="text-gray-600 hover:text-gray-800 p-1"
-                                title="View Planning"
-                                aria-label="View Planning"
-                              >
-                                <FontAwesomeIcon icon={faEye} />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteSession(session.id);
-                                }}
-                                className="text-gray-600 hover:text-gray-800 p-1"
-                                title="Delete Session"
-                                aria-label="Delete Session"
-                              >
-                                <FontAwesomeIcon icon={faTrash} />
-                              </button>
-                              <button
-                                onClick={(e) => handleAddClick(e, session)}
-                                className="text-gray-600 hover:text-gray-800 p-1"
-                                title="View Planning"
-                                aria-label="View Planning"
-                              >
-                                <FontAwesomeIcon icon={faCalendarAlt} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCloseSession(session.id);
-                                }}
-                                className="text-gray-600 hover:text-gray-800 p-1"
-                                title="Close Session"
-                                aria-label="Close Session"
-                              >
-                                <FontAwesomeIcon icon={faLock} />
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </>
-                    )}
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {currentSessions.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                      No sessions found for this schedule.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  currentSessions.map((session) => (
+                    <tr
+                      key={session.id}
+                      className="hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleRowClick(session)}
+                    >
+                      {editingSessionId === session.id ? (
+                        <>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center border border-gray-300 rounded-md shadow-sm">
+                              <FontAwesomeIcon
+                                icon={faCalendarAlt}
+                                className="mx-3 text-gray-400"
+                              />
+                              <input
+                                type="date"
+                                name="startDate"
+                                value={editForm.startDate}
+                                onChange={handleInputChange}
+                                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              />
+                            </div>
+                          </td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center border border-gray-300 rounded-md shadow-sm">
+                              <FontAwesomeIcon
+                                icon={faCalendarAlt}
+                                className="mx-3 text-gray-400"
+                              />
+                              <input
+                                type="date"
+                                name="endDate"
+                                value={editForm.endDate}
+                                onChange={handleInputChange}
+                                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              />
+                            </div>
+                          </td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                            {session.closed ? 'Yes' : 'No'}
+                          </td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-2">
+                            <button
+                              onClick={() => handleUpdateSession(session.id)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="Save Changes"
+                              aria-label="Save Changes"
+                            >
+                              <FontAwesomeIcon icon={faSave} />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Cancel"
+                              aria-label="Cancel"
+                            >
+                              <FontAwesomeIcon icon={faTimes} />
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">{session.startDate}</td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                            {session.finishDate || 'N/A'}
+                          </td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap">
+                            {session.closed ? 'Yes' : 'No'}
+                          </td>
+                          <td className="w-1/4 px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-2">
+                            {session.closed ? (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSession(session.id);
+                                  }}
+                                  className="text-red-600 hover:text-red-800 p-1"
+                                  title="Delete Session"
+                                  aria-label="Delete Session"
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                                <button
+                                  onClick={(e) => handleViewPlanningDetails(e, session)}
+                                  className="text-blue-600 hover:text-blue-800 p-1"
+                                  title="View Planning"
+                                  aria-label="View Planning"
+                                >
+                                  <FontAwesomeIcon icon={faEye} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSession(session.id);
+                                  }}
+                                  className="text-red-600 hover:text-red-800 p-1"
+                                  title="Delete Session"
+                                  aria-label="Delete Session"
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                                <button
+                                  onClick={(e) => handleAddClick(e, session)}
+                                  className="text-blue-600 hover:text-blue-800 p-1"
+                                  title="View Planning"
+                                  aria-label="View Planning"
+                                >
+                                  <FontAwesomeIcon icon={faCalendarAlt} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCloseSession(session.id);
+                                  }}
+                                  className="text-green-600 hover:text-green-800 p-1"
+                                  title="Close Session"
+                                  aria-label="Close Session"
+                                >
+                                  <FontAwesomeIcon icon={faLock} />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {sessions.length > sessionsPerPage && (
+            <div className="bg-gray-50 px-6 py-3 flex items-center justify-end border-t border-gray-200">
+              <div className="flex space-x-2">
+                <button
+                  onClick={handlePrevious}
+                  disabled={safePage === 1}
+                  className={`px-3 py-1 border border-gray-300 rounded-md text-sm font-medium ${
+                    safePage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={safePage === totalPages}
+                  className={`px-3 py-1 border border-gray-300 rounded-md text-sm font-medium ${
+                    safePage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faBook, faClock, faGraduationCap, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faBook, faClock, faGraduationCap, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
@@ -33,7 +33,8 @@ const Dropdown = ({ label, options, selectedValue, onChange, name }) => {
   );
 };
 
-const ScheduleEdit = ({ scheduleId, scheduleinfo }) => {
+const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
+  console.log("scheduleinfo",scheduleinfo)
   const [schedule, setSchedule] = useState({
     promotion: null,
     semester: scheduleinfo.semester || '',
@@ -132,7 +133,12 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo }) => {
         withCredentials: true,
       });
 
+
       setSuccessMessage('Schedule updated successfully!');
+      setTimeout(() => {
+        setSuccessMessage('');
+        setViewMode("list")
+      }, 3000);
     } catch (err) {
       console.error('Failed to update schedule:', err);
       const errorMessage = err.response?.data?.error || 'Failed to update schedule. Please try again.';
@@ -140,18 +146,6 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo }) => {
     }
   };
 
-  const cancel = () => {
-    // Reset form to initial scheduleinfo values
-    const selectedPromotion = promotionOptions.find(
-      (p) => p.id === scheduleinfo.promotionId
-    ) || null;
-    setSchedule({
-      promotion: selectedPromotion,
-      semester: scheduleinfo.semester || '',
-      educationalYear: scheduleinfo.educationalYear || '',
-    });
-    setSuccessMessage('');
-  };
 
   if (loading) {
     return <div>Loading promotions...</div>;
@@ -221,13 +215,6 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo }) => {
         >
           <FontAwesomeIcon icon={faSave} className="mr-2" />
           Save Changes
-        </button>
-        <button
-          onClick={cancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <FontAwesomeIcon icon={faTimes} className="mr-2" />
-          Cancel
         </button>
       </div>
     </div>
