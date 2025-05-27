@@ -19,6 +19,7 @@ import Settings from './Settings';
 import ScheduleManagement from './ScheduleManagement';
 import Profile from './Profile';
 import Home from './Home';
+import Payment from './Payment';
 
 const Dashboard = ({ user, setUser }) => {
   const [activeTab, setActiveTab] = useState('home');
@@ -288,43 +289,7 @@ const Dashboard = ({ user, setUser }) => {
           )}
 
           {activeTab === 'payment' && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2 text-blue-500" />
-                Payment Processing
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-700 mb-3">Salary Payments</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span>Pending Payments</span>
-                      <span className="font-medium">12</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Processed This Month</span>
-                      <span className="font-medium">24</span>
-                    </div>
-                    <button className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
-                      Process Payments
-                    </button>
-                  </div>
-                </div>
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium text-gray-700 mb-3">Payment History</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>October 2023</span>
-                      <span className="font-medium">$245,678</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>September 2023</span>
-                      <span className="font-medium">$238,910</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Payment />
           )}
         </div>
       </div>

@@ -6,14 +6,11 @@ import { faCalendarAlt, faPlus, faAngleRight } from '@fortawesome/free-solid-svg
 import ScheduleList from './planning pages/ScheduleList';
 import ScheduleAdd from './planning pages/ScheduleAdd';
 import ScheduleEdit from './planning pages/ScheduleEdit';
-import SessionList from './planning pages/SessionList';
 import Planning from './planning pages/Planning';
-import ViewPlanning from './planning pages/ViewPlanning';
 
 const ScheduleManagement = ({ user, setUser }) => {
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'sessionList', 'planning', 'planning-add', 'planning-edit'
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'add', 'edit', 'planning', 'planning-add', 'planning-edit'
   const [selectedSchedule, setSelectedSchedule] = useState(null);
-  const [selectedSession, setSelectedSession] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -42,21 +39,9 @@ const ScheduleManagement = ({ user, setUser }) => {
     setViewMode('edit');
   };
 
-  const handleViewSessions = (schedule) => {
+  const handleViewPlanning = (schedule) => {
     setSelectedSchedule(schedule);
-    setViewMode('sessionList');
-  };
-
-  const handleViewPlanning = (schedule, session) => {
-    setSelectedSchedule(schedule);
-    setSelectedSession(session);
     setViewMode('planning');
-  };
-
-  const handleViewPlanningDetails = (schedule, session) => {
-    setSelectedSchedule(schedule);
-    setSelectedSession(session);
-    setViewMode('view_planning');
   };
 
   const handlePlanningViewModeChange = (mode) => {
@@ -68,11 +53,9 @@ const ScheduleManagement = ({ user, setUser }) => {
       list: 'Schedule List',
       add: 'Add Schedule',
       edit: 'Edit Schedule',
-      sessionList: 'Session List',
       planning: 'Planning Management',
       'planning-add': 'Add',
       'planning-edit': 'Edit',
-      view_planning: 'View Planning',
     };
 
     return (
@@ -87,18 +70,14 @@ const ScheduleManagement = ({ user, setUser }) => {
         {viewMode !== 'list' && (
           <>
             <FontAwesomeIcon icon={faAngleRight} className="mx-2 text-gray-500" />
-            {viewMode === 'sessionList' && <span>{modes[viewMode]}</span>}
             {(viewMode === 'planning' || viewMode === 'planning-add' || viewMode === 'planning-edit') && (
               <>
                 <button
-                  onClick={() => setViewMode('sessionList')}
-                  className="hover:text-blue-600 transition-colors hover:cursor-pointer"
-                >
-                  Session List
-                </button>
-                <FontAwesomeIcon icon={faAngleRight} className="mx-2 text-gray-500" />
-                <button
-                  onClick={() => {setViewMode('planning'),setShowAddForm(false),setShowEditForm(false)}}
+                  onClick={() => {
+                    setViewMode('planning');
+                    setShowAddForm(false);
+                    setShowEditForm(false);
+                  }}
                   className="hover:text-blue-600 transition-colors hover:cursor-pointer"
                 >
                   Planning Management
@@ -111,20 +90,7 @@ const ScheduleManagement = ({ user, setUser }) => {
                 )}
               </>
             )}
-            {viewMode === 'view_planning' && (
-              <>
-                <button
-                  onClick={() => setViewMode('sessionList')}
-                  className="hover:text-blue-600 transition-colors hover:cursor-pointer"
-                >
-                  Session List
-                </button>
-                <FontAwesomeIcon icon={faAngleRight} className="mx-2 text-gray-500" />
-                <span>{modes[viewMode]}</span>
-              </>
-            )}
-
-            {viewMode !== 'sessionList' && viewMode !== 'planning' && viewMode !== 'planning-add' && viewMode !== 'planning-edit' && viewMode !== 'view_planning' &&(
+            {viewMode !== 'planning' && viewMode !== 'planning-add' && viewMode !== 'planning-edit' && (
               <span>{modes[viewMode]}</span>
             )}
           </>
@@ -182,7 +148,7 @@ const ScheduleManagement = ({ user, setUser }) => {
             user={user}
             setUser={setUser}
             onEditSchedule={handleEditSchedule}
-            onViewSessions={handleViewSessions}
+            onViewPlanning={handleViewPlanning}
           />
         </div>
       )}
@@ -192,36 +158,23 @@ const ScheduleManagement = ({ user, setUser }) => {
       )}
 
       {viewMode === 'edit' && selectedSchedule && (
-        <ScheduleEdit scheduleId={selectedSchedule.id} scheduleinfo={selectedSchedule} setViewMode={setViewMode}/>
-      )}
-
-      {viewMode === 'sessionList' && selectedSchedule && (
-        <SessionList
-          user={user}
-          setUser={setUser}
-          schedule={selectedSchedule}
-          onViewPlanning={handleViewPlanning}
-          onViewPlanningDetails={handleViewPlanningDetails}
+        <ScheduleEdit
+          scheduleId={selectedSchedule.id}
+          scheduleinfo={selectedSchedule}
+          setViewMode={setViewMode}
         />
       )}
 
-      {(viewMode === 'planning' || viewMode === 'planning-add' || viewMode === 'planning-edit') && selectedSchedule && selectedSession && (
+      {(viewMode === 'planning' || viewMode === 'planning-add' || viewMode === 'planning-edit') && selectedSchedule && (
         <Planning
           user={user}
           setUser={setUser}
           schedule={selectedSchedule}
-          sessionId={selectedSession.id}
           onViewModeChange={handlePlanningViewModeChange}
           showAddForm={showAddForm}
           setShowAddForm={setShowAddForm}
           showEditForm={showEditForm}
           setShowEditForm={setShowEditForm}
-        />
-      )}
-
-      {viewMode === 'view_planning' && selectedSchedule && (
-        <ViewPlanning
-          sessionId={selectedSession.id}
         />
       )}
     </div>

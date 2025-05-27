@@ -10,19 +10,19 @@ import {
   faCheckCircle,
   faAngleRight,
   faSearch,
+  faCalendarTimes, // Added for absent icon
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
-
-
 
 import AddTeacher from './teacher page/AddTeacher';
 import EditTeacher from './teacher page/EditTeacher';
 import PrintHeureSupCart from './teacher page/PrintHeureSupCart';
+import TeacherAbsen from './teacher page/TeacherAbsen'; // Import TeacherAbsen component
 
 const TeacherManagement = ({ user, setUser }) => {
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'view', 'edit', 'add'
+  const [viewMode, setViewMode] = useState('list');
   const [successMessage, setSuccessMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState(null);
@@ -30,6 +30,8 @@ const TeacherManagement = ({ user, setUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const teachersPerPage = 4;
   const navigate = useNavigate();
 
@@ -52,6 +54,9 @@ const TeacherManagement = ({ user, setUser }) => {
           gradeId: item.Teacher.gradeId,
           gradeName: item.Grade.GradeName,
           role: item.User.role,
+          paymentType: item.Teacher.paymentType,
+          teacherType: item.Teacher.teacherType,
+          accountNumber: item.Teacher.accountNumber,
         }));
         setTeachers(transformedTeachers);
       } catch (err) {
@@ -144,25 +149,65 @@ const TeacherManagement = ({ user, setUser }) => {
 
   const viewTeacher = (teacher) => {
     setSelectedTeacher(teacher);
-    setViewMode('view');
+    setViewMode('selectDates');
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const viewTeacherAbsen = (teacher) => {
+    setSelectedTeacher(teacher);
+    setViewMode('absent');
+  };
+
+  const handleDateFormSubmit = (e) => {
+    e.preventDefault();
+    if (!startDate || !endDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      alert('End date must be after start date.');
+      return;
+    }
+    setViewMode('Overtime Hours Report');
   };
 
   const editTeacher = (teacher) => {
+    console.log('Editing teacher:', teacher);
     setSelectedTeacher(teacher);
     setViewMode('edit');
   };
 
   const saveEditedTeacher = async (updatedTeacher, gradeName) => {
-    await axios.put('http://localhost:3000/api/teacher/update', updatedTeacher, {
-      withCredentials: true,
-    });
-    setTeachers(
-      teachers.map((teacher) =>
-        teacher.id === updatedTeacher.id
-          ? { ...teacher, ...updatedTeacher, gradeId: updatedTeacher.gradeId, gradeName }
-          : teacher
-      )
-    );
+    try {
+      await axios.put('http://localhost:3000/api/teacher/update', updatedTeacher, {
+        withCredentials: true,
+      });
+      setTeachers(
+        teachers.map((teacher) =>
+          teacher.id === updatedTeacher.id
+            ? {
+                ...teacher,
+                ...updatedTeacher,
+                gradeId: updatedTeacher.gradeId,
+                gradeName,
+                paymentType: updatedTeacher.paymentType,
+                teacherType: updatedTeacher.teacherType,
+                accountNumber: updatedTeacher.accountNumber,
+              }
+            : teacher
+        )
+      );
+      setSuccessMessage('Teacher updated successfully!');
+    } catch (err) {
+      console.error('Failed to update teacher:', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setUser(null);
+        navigate('/login');
+      } else {
+        alert('Failed to update teacher: ' + (err.response?.data?.error || 'Unknown error'));
+      }
+    }
   };
 
   const confirmDelete = (id) => {
@@ -202,22 +247,42 @@ const TeacherManagement = ({ user, setUser }) => {
   };
 
   const saveNewTeacher = async (teacherToAdd) => {
-    await axios.post('http://localhost:3000/api/auth/signup', teacherToAdd, {
-      withCredentials: true,
-    });
-    const response = await axios.get('http://localhost:3000/api/teacher/get', {
-      withCredentials: true,
-    });
-    const transformedTeachers = response.data.map((item) => ({
-      id: item.Teacher.id,
-      firstName: item.User.firstName,
-      lastName: item.User.lastName,
-      email: item.User.email,
-      gradeId: item.Teacher.gradeId,
-      gradeName: item.Grade.GradeName,
-      role: item.User.role,
-    }));
-    setTeachers(transformedTeachers);
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/signup', teacherToAdd, {
+        withCredentials: true,
+      });
+
+      console.log('New teacher added:', response.data);
+
+      const fetchResponse = await axios.get('http://localhost:3000/api/teacher/get', {
+        withCredentials: true,
+      });
+      const transformedTeachers = fetchResponse.data.map((item) => ({
+        id: item.Teacher.id,
+        firstName: item.User.firstName,
+        lastName: item.User.lastName,
+        email: item.User.email,
+        gradeId: item.Teacher.gradeId,
+        gradeName: item.Grade.GradeName,
+        role: item.User.role,
+        paymentType: item.Teacher.paymentType,
+        teacherType: item.Teacher.teacherType,
+        accountNumber: item.Teacher.accountNumber,
+      }));
+
+      setTeachers(transformedTeachers);
+      setSuccessMessage('Teacher added successfully!');
+      setViewMode('list');
+      setCurrentPage(1);
+    } catch (err) {
+      console.error('Failed to add teacher:', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setUser(null);
+        navigate('/login');
+      } else {
+        alert('Failed to add teacher: ' + (err.response?.data?.error || 'Unknown error'));
+      }
+    }
   };
 
   const renderBreadcrumb = () => {
@@ -225,7 +290,12 @@ const TeacherManagement = ({ user, setUser }) => {
       <div className="flex items-center text-2xl font-bold text-gray-800 mb-6">
         <FontAwesomeIcon icon={faUserGraduate} className="mr-2 text-blue-600" />
         <button
-          onClick={() => setViewMode('list')}
+          onClick={() => {
+            setViewMode('list');
+            setSelectedTeacher(null);
+            setStartDate('');
+            setEndDate('');
+          }}
           className="hover:text-blue-600 transition-colors hover:cursor-pointer"
         >
           Teacher Management
@@ -233,7 +303,13 @@ const TeacherManagement = ({ user, setUser }) => {
         {viewMode !== 'list' && (
           <>
             <FontAwesomeIcon icon={faAngleRight} className="mx-2 text-gray-500" />
-            <span className="capitalize">{viewMode}</span>
+            <span className="capitalize">
+              {viewMode === 'selectDates'
+                ? 'Select Date Range'
+                : viewMode === 'absent'
+                ? 'Teacher Absence'
+                : viewMode}
+            </span>
           </>
         )}
       </div>
@@ -361,6 +437,15 @@ const TeacherManagement = ({ user, setUser }) => {
                           >
                             <FontAwesomeIcon icon={faTrash} className="h-5 w-5" />
                           </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              viewTeacherAbsen(teacher);
+                            }}
+                            className="text-yellow-600 hover:text-yellow-900"
+                          >
+                            <FontAwesomeIcon icon={faCalendarTimes} className="h-5 w-5" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -397,11 +482,70 @@ const TeacherManagement = ({ user, setUser }) => {
         </div>
       )}
 
-      {viewMode === 'view' && selectedTeacher && (
+      {viewMode === 'selectDates' && selectedTeacher && (
+        <div className="w-full bg-white shadow rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">
+            Select Date Range for {selectedTeacher.firstName} {selectedTeacher.lastName}
+          </h2>
+          <form onSubmit={handleDateFormSubmit}>
+            <div className="mb-4">
+              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                Start Date
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="mb-6">
+              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                End Date
+              </label>
+              <input
+                id="endDate"
+                type="date"
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
+              >
+                <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode('list');
+                  setSelectedTeacher(null);
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                <FontAwesomeIcon icon={faTimes} className="mr-2" />
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {viewMode === 'Overtime Hours Report' && selectedTeacher && (
         <PrintHeureSupCart
           teacher={selectedTeacher}
-          onEdit={editTeacher}
-          onDelete={confirmDelete}
+          teacherId={selectedTeacher.id}
+          startDate={startDate}
+          endDate={endDate}
         />
       )}
 
@@ -425,6 +569,14 @@ const TeacherManagement = ({ user, setUser }) => {
           setSuccessMessage={setSuccessMessage}
           setUser={setUser}
           navigate={navigate}
+        />
+      )}
+
+      {viewMode === 'absent' && selectedTeacher && (
+        <TeacherAbsen
+          teacher={selectedTeacher}
+          setSuccessMessage={setSuccessMessage}
+          setUser={setUser}
         />
       )}
 

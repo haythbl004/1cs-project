@@ -4,16 +4,17 @@ import {
   faEdit,
   faTrash,
   faAngleRight,
+  faCalendarAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
+const ScheduleList = ({ user, setUser, onEditSchedule, onViewPlanning }) => {
   const [schedules, setSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const schedulesPerPage = 5; // Same as patientsPerPage in Pending component
+  const schedulesPerPage = 5;
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -33,9 +34,11 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
           promotion: item.Promotion.name,
           promotionId: item.Schedule.promotionId,
           educationalYear: item.Schedule.educationalYear,
+          startDate: item.Schedule.startDate,
+          endDate: item.Schedule.endDate,
         }));
         setSchedules(transformedSchedules);
-        setCurrentPage(1); // Reset to first page when schedules are fetched
+        setCurrentPage(1);
       } catch (err) {
         console.error('Failed to fetch schedules:', err);
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -98,7 +101,6 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
       });
       setSchedules((prev) => prev.filter((schedule) => schedule.id !== scheduleId));
       setSuccessMessage('Schedule deleted successfully!');
-      // Adjust current page if necessary after deletion
       if (currentSchedules.length === 1 && safePage > 1) {
         setCurrentPage((prev) => prev - 1);
       }
@@ -113,11 +115,9 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
     }
   };
 
-  const handleRowClick = (schedule, event) => {
-    if (event.target.closest('button')) {
-      return;
-    }
-    onViewSessions(schedule);
+  const handleViewPlanningClick = (e, schedule) => {
+    e.stopPropagation();
+    onViewPlanning(schedule);
   };
 
   if (isLoading) {
@@ -181,6 +181,12 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
                   Educational Year
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Start Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  End Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -188,7 +194,7 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {currentSchedules.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                     No schedules found.
                   </td>
                 </tr>
@@ -197,11 +203,22 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
                   <tr
                     key={schedule.id}
                     className="hover:bg-gray-100 cursor-pointer"
-                    onClick={(event) => handleRowClick(schedule, event)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">{schedule.semester}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{schedule.promotion}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{schedule.educationalYear}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-gray-400" />
+                        {schedule.startDate || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-gray-400" />
+                        {schedule.endDate || 'N/A'}
+                      </div>
+                    </td>
                     <td
                       className="px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-start items-center space-x-3"
                       onClick={(e) => e.stopPropagation()}
@@ -219,6 +236,14 @@ const ScheduleList = ({ user, setUser, onEditSchedule, onViewSessions }) => {
                         title="Delete Schedule"
                       >
                         <FontAwesomeIcon icon={faTrash} className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={(e) => handleViewPlanningClick(e, schedule)}
+                        className="text-blue-600 hover:text-blue-800 p-1"
+                        title="View Planning"
+                        aria-label="View Planning"
+                      >
+                        <FontAwesomeIcon icon={faCalendarAlt} className="h-5 w-5" />
                       </button>
                     </td>
                   </tr>

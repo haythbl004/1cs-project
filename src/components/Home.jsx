@@ -13,6 +13,7 @@ import HolidaySettings from './HolidaySettings';
 import PromotionSettings from './PromotionSettings';
 import CoefficientSettings from './CoefficientSettings';
 import SpecialitySettings from './SpecialitySettings';
+import ViewHoliday from './ViewHoliday';  
 
 const Home = ({ setActiveTab }) => {
   // State for API data
@@ -190,6 +191,7 @@ const Home = ({ setActiveTab }) => {
               <a
                 href="#"
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline underline-offset-2"
+                onClick={() => setActiveSettings('viewHolidays')}
               >
                 View All →
               </a>
@@ -222,13 +224,15 @@ const Home = ({ setActiveTab }) => {
   const renderSettingsContent = () => {
     switch (activeSettings) {
       case 'holidays':
-        return <HolidaySettings onBack={() => setActiveSettings(null)} />;
+        return <div className='p-7'><HolidaySettings onBack={() => setActiveSettings(null)} isBack={true}/></div>;
       case 'promotions':
-        return <PromotionSettings onBack={() => setActiveSettings(null)} />;
+        return <div className='p-7'><PromotionSettings onBack={() => setActiveSettings(null)} isBack={true}/></div>;
       case 'coefficients':
-        return <CoefficientSettings onBack={() => setActiveSettings(null)} />;
+        return <div className='p-7'><CoefficientSettings onBack={() => setActiveSettings(null)} isBack={true}/></div>;
       case 'specialities':
-        return <SpecialitySettings onBack={() => setActiveSettings(null)} />;
+        return <div className='p-7'><SpecialitySettings onBack={() => setActiveSettings(null)} isBack={true}/></div>;
+      case 'viewHolidays':
+        return <ViewHoliday onBack={() => setActiveSettings(null)} />;
       default:
         return renderMainContent();
     }

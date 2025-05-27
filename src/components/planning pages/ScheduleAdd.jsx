@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faBook, faClock, faGraduationCap, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faBook, faClock, faGraduationCap, faCheckCircle, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
@@ -38,6 +38,8 @@ const ScheduleAdd = () => {
     promotion: null,
     semester: '',
     educationalYear: '',
+    startDate: '',
+    endDate: '',
   });
   const [promotionOptions, setPromotionOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,11 +108,21 @@ const ScheduleAdd = () => {
         alert('Please enter an educational year');
         return;
       }
+      if (!newSchedule.startDate) {
+        alert('Please select a start date');
+        return;
+      }
+      if (!newSchedule.endDate) {
+        alert('Please select an end date');
+        return;
+      }
 
       const scheduleToAdd = {
         promotionId: newSchedule.promotion.id,
         semester: newSchedule.semester,
         educationalYear: newSchedule.educationalYear,
+        startDate: newSchedule.startDate,
+        endDate: newSchedule.endDate,
       };
 
       // Send POST request
@@ -123,9 +135,14 @@ const ScheduleAdd = () => {
         promotion: null,
         semester: '',
         educationalYear: '',
+        startDate: '',
+        endDate: '',
       });
 
       setSuccessMessage('Schedule created successfully!');
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
     } catch (err) {
       console.error('Failed to create schedule:', err);
       const errorMessage = err.response?.data?.error || 'Failed to create schedule. Please try again.';
@@ -133,15 +150,6 @@ const ScheduleAdd = () => {
     }
   };
 
-  const cancel = () => {
-    // Reset form
-    setNewSchedule({
-      promotion: null,
-      semester: '',
-      educationalYear: '',
-    });
-    setSuccessMessage('');
-  };
 
   if (loading) {
     return <div>Loading promotions...</div>;
@@ -152,9 +160,8 @@ const ScheduleAdd = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-6">
-      <h2 className="text-xl font-semibold mb-4">Create New Schedule</h2>
-      {successMessage && (
+    <div >
+            {successMessage && (
         <div className="rounded-md bg-green-50 p-3 border border-green-100 mb-6">
           <div className="flex items-center">
             <FontAwesomeIcon
@@ -165,6 +172,8 @@ const ScheduleAdd = () => {
           </div>
         </div>
       )}
+    <div className="bg-white rounded-lg shadow-xl p-6">
+      <h2 className="text-xl font-semibold mb-4">Create New Schedule</h2>
       <div className="space-y-4">
         <Dropdown
           label="Promotion"
@@ -203,6 +212,34 @@ const ScheduleAdd = () => {
             />
           </div>
         </div>
+        <div className="flex space-x-4">
+          <div className="relative flex-1">
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faCalendarAlt} className="mx-3 text-gray-400" />
+              <input
+                type="date"
+                name="startDate"
+                value={newSchedule.startDate}
+                onChange={handleInputChange}
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+          <div className="relative flex-1">
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faCalendarAlt} className="mx-3 text-gray-400" />
+              <input
+                type="date"
+                name="endDate"
+                value={newSchedule.endDate}
+                onChange={handleInputChange}
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <div className="mt-6 flex space-x-3">
         <button
@@ -212,14 +249,8 @@ const ScheduleAdd = () => {
           <FontAwesomeIcon icon={faSave} className="mr-2" />
           Create Schedule
         </button>
-        <button
-          onClick={cancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <FontAwesomeIcon icon={faTimes} className="mr-2" />
-          Cancel
-        </button>
       </div>
+    </div>
     </div>
   );
 };

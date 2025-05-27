@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faBook, faClock, faGraduationCap, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faBook, faClock, faGraduationCap, faCheckCircle, faCalendar } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
@@ -34,11 +34,13 @@ const Dropdown = ({ label, options, selectedValue, onChange, name }) => {
 };
 
 const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
-  console.log("scheduleinfo",scheduleinfo)
+  console.log("scheduleinfo", scheduleinfo);
   const [schedule, setSchedule] = useState({
     promotion: null,
     semester: scheduleinfo.semester || '',
     educationalYear: scheduleinfo.educationalYear || '',
+    startDate: scheduleinfo.startDate || '',
+    endDate: scheduleinfo.endDate || '',
   });
   const [promotionOptions, setPromotionOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +52,10 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
     const fetchPromotions = async () => {
       console.log("Using schedule info:", scheduleinfo);
       try {
-        // Fetch promotions
         const promotionResponse = await axios.get('http://localhost:3000/api/promotion', {
           withCredentials: true,
         });
 
-        // Handle promotion response data (single object or array)
         let promotions = [];
         if (Array.isArray(promotionResponse.data)) {
           promotions = promotionResponse.data;
@@ -65,17 +65,15 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
           console.warn('No promotions found in response');
         }
 
-        // Transform promotions to match Dropdown options format
         const transformedPromotions = promotions
-          .filter((item) => item.Promotion) // Ensure Promotion exists
+          .filter((item) => item.Promotion)
           .map((item) => ({
             id: item.Promotion.id,
-            name: `${item.Promotion.name} (${item.Speciality?.name || ''})`, // Display "" if Speciality is null/undefined
+            name: `${item.Promotion.name} (${item.Speciality?.name || ''})`,
           }));
 
         setPromotionOptions(transformedPromotions);
 
-        // Set promotion from scheduleinfo
         const selectedPromotion = transformedPromotions.find(
           (p) => p.id === scheduleinfo.promotionId
         ) || null;
@@ -120,24 +118,32 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
         alert('Please enter an educational year');
         return;
       }
+      if (!schedule.startDate) {
+        alert('Please enter a start date');
+        return;
+      }
+      if (!schedule.endDate) {
+        alert('Please enter an end date');
+        return;
+      }
 
       const scheduleToUpdate = {
         id: scheduleId,
         promotionId: schedule.promotion.id,
         semester: schedule.semester,
         educationalYear: schedule.educationalYear,
+        startDate: schedule.startDate,
+        endDate: schedule.endDate,
       };
 
-      // Send PUT request
       await axios.put('http://localhost:3000/api/schedule', scheduleToUpdate, {
         withCredentials: true,
       });
 
-
       setSuccessMessage('Schedule updated successfully!');
       setTimeout(() => {
         setSuccessMessage('');
-        setViewMode("list")
+        setViewMode('list');
       }, 3000);
     } catch (err) {
       console.error('Failed to update schedule:', err);
@@ -145,7 +151,6 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
       alert(errorMessage);
     }
   };
-
 
   if (loading) {
     return <div>Loading promotions...</div>;
@@ -205,6 +210,36 @@ const ScheduleEdit = ({ scheduleId, scheduleinfo, setViewMode }) => {
               placeholder="Enter educational year (e.g., 2024/2025)"
               className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
+          </div>
+        </div>
+        <div className="relative flex space-x-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faCalendar} className="mx-3 text-gray-400" />
+              <input
+                type="text"
+                name="startDate"
+                value={schedule.startDate}
+                onChange={handleInputChange}
+                placeholder="Enter start date (e.g., 10-09-2024)"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faCalendar} className="mx-3 text-gray-400" />
+              <input
+                type="text"
+                name="endDate"
+                value={schedule.endDate}
+                onChange={handleInputChange}
+                placeholder="Enter end date (e.g., 10-12-2024)"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
           </div>
         </div>
       </div>

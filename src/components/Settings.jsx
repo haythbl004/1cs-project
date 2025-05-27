@@ -5,14 +5,15 @@ import HolidaySettings from './HolidaySettings';
 import CoefficientSettings from './CoefficientSettings';
 import PromotionSettings from './PromotionSettings';
 import SpecialitySettings from './SpecialitySettings';
+import AbsentSettings from './AbsentSettings'; // Added import for AbsentSettings
 import {
   faShieldAlt,
   faChartLine,
   faCalculator,
   faUmbrellaBeach,
-  faStar
+  faStar,
+  faCalendarXmark // Added new icon for Absent
 } from '@fortawesome/free-solid-svg-icons';
-
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState('speciality');
@@ -29,6 +30,8 @@ const SettingsPage = () => {
         return <HolidaySettings />;
       case 'grade':
         return <GradeSettings />;
+      case 'absent': // Added case for absent
+        return <AbsentSettings />;
       default:
         return <SpecialitySettings />;
     }
@@ -73,6 +76,12 @@ const SettingsPage = () => {
               icon={<FontAwesomeIcon icon={faStar} />}
               text="Grade"
             />
+            <SidebarItem
+              active={activeTab === 'absent'}
+              onClick={() => setActiveTab('absent')}
+              icon={<FontAwesomeIcon icon={faCalendarXmark} />}
+              text="Absent"
+            />
           </ul>
         </nav>
       </div>
@@ -102,4 +111,5 @@ const SidebarItem = ({ active, onClick, icon, text }) => (
     </button>
   </li>
 );
+
 export default SettingsPage;

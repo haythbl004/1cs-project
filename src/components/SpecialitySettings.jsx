@@ -9,10 +9,11 @@ import {
   faChevronRight,
   faCheckCircle,
   faBook,
+  faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const SpecialitySettings = () => {
+const SpecialitySettings = ({ onBack, isBack }) => {
   const [specialities, setSpecialities] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -21,12 +22,10 @@ const SpecialitySettings = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Fetch all specialities on component mount
   useEffect(() => {
     fetchSpecialities();
   }, []);
 
-  // Clear success/error messages after 3 seconds
   useEffect(() => {
     if (successMessage || errorMessage) {
       const timer = setTimeout(() => {
@@ -87,20 +86,20 @@ const SpecialitySettings = () => {
       setErrorMessage('Please fill the speciality name');
       return;
     }
-  
+
     try {
       await axios.put(
         `http://localhost:3000/api/speciality/${editingId}`,
         { name: formData.name },
         { withCredentials: true }
       );
-  
+
       setSpecialities(
         specialities.map((speciality) =>
           speciality.id === editingId ? { ...speciality, name: formData.name } : speciality
         )
       );
-  
+
       setEditingId(null);
       setFormData({ name: '' });
       setSuccessMessage('Speciality updated successfully!');
@@ -203,13 +202,24 @@ const SpecialitySettings = () => {
           )}
         </h2>
         {!isAdding && editingId === null && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Speciality
-          </button>
+          <div className="flex space-x-3">
+            {isBack && (
+              <button
+                onClick={() => onBack('home')}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                Back to Home
+              </button>
+            )}
+            <button
+              onClick={() => setIsAdding(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Add New Speciality
+            </button>
+          </div>
         )}
       </div>
 

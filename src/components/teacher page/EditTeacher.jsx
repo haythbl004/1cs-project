@@ -1,11 +1,16 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faSave } from '@fortawesome/free-solid-svg-icons';
-import CustomDropdown from '../CustomDropdown'; // Assuming CustomDropdown is in the same directory
+import CustomDropdown from '../CustomDropdown';
 import { useState } from 'react';
+
 const EditTeacher = ({ teacher, gradeOptions, onSave, onCancel, setSuccessMessage, setUser, navigate }) => {
   const [selectedTeacher, setSelectedTeacher] = useState({
     ...teacher,
     grade: gradeOptions.find((g) => g.id === teacher.gradeId) || null,
+    password: '', // Initialize password as empty
+    paymentType: teacher.paymentType || '', // Initialize with teacher data or empty
+    teacherType: teacher.teacherType || '',
+    accountNumber: teacher.accountNumber || '',
   });
 
   const handleInputChange = (e) => {
@@ -26,6 +31,9 @@ const EditTeacher = ({ teacher, gradeOptions, onSave, onCancel, setSuccessMessag
         email: selectedTeacher.email,
         role: 'teacher',
         gradeId: selectedTeacher.grade?.id,
+        paymentType: selectedTeacher.paymentType,
+        teacherType: selectedTeacher.teacherType,
+        accountNumber: selectedTeacher.accountNumber,
       };
       await onSave(updatedTeacher, selectedTeacher.grade?.name);
       setSuccessMessage('Teacher updated successfully!');
@@ -36,7 +44,7 @@ const EditTeacher = ({ teacher, gradeOptions, onSave, onCancel, setSuccessMessag
         setUser(null);
         navigate('/login');
       } else {
-        alert('Failed to update teacher');
+        alert(err.response?.data?.error || 'Failed to update teacher');
       }
     }
   };
@@ -45,46 +53,34 @@ const EditTeacher = ({ teacher, gradeOptions, onSave, onCancel, setSuccessMessag
     <div className="bg-white rounded-lg shadow-xl p-6">
       <h2 className="text-xl font-semibold mb-4">Edit Teacher</h2>
       <div className="space-y-4">
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700">First Name</label>
-          <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
-            <FontAwesomeIcon icon={faUser} className="mx-3 text-gray-400" />
-            <input
-              type="text"
-              name="firstName"
-              value={selectedTeacher.firstName || ''}
-              onChange={handleInputChange}
-              placeholder="Enter first name"
-              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">First Name</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faUser} className="mx-3 text-gray-400" />
+              <input
+                type="text"
+                name="firstName"
+                value={selectedTeacher.firstName || ''}
+                onChange={handleInputChange}
+                placeholder="Enter first name"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
           </div>
-        </div>
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700">Last Name</label>
-          <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
-            <FontAwesomeIcon icon={faUser} className="mx-3 text-gray-400" />
-            <input
-              type="text"
-              name="lastName"
-              value={selectedTeacher.lastName || ''}
-              onChange={handleInputChange}
-              placeholder="Enter last name"
-              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-        </div>
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
-            <FontAwesomeIcon icon={faEnvelope} className="mx-3 text-gray-400" />
-            <input
-              type="email"
-              name="email"
-              value={selectedTeacher.email || ''}
-              onChange={handleInputChange}
-              placeholder="Enter email"
-              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Last Name</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faUser} className="mx-3 text-gray-400" />
+              <input
+                type="text"
+                name="lastName"
+                value={selectedTeacher.lastName || ''}
+                onChange={handleInputChange}
+                placeholder="Enter last name"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
           </div>
         </div>
         <CustomDropdown
@@ -94,6 +90,58 @@ const EditTeacher = ({ teacher, gradeOptions, onSave, onCancel, setSuccessMessag
           onChange={handleGradeChange}
           name="grade"
         />
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faEnvelope} className="mx-3 text-gray-400" />
+              <input
+                type="email"
+                name="email"
+                value={selectedTeacher.email || ''}
+                onChange={handleInputChange}
+                placeholder="Enter email"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex-1">
+          </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Payment Type</label>
+            <input
+              type="text"
+              name="paymentType"
+              value={selectedTeacher.paymentType || ''}
+              onChange={handleInputChange}
+              placeholder="e.g. ccp"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Teacher Type</label>
+            <input
+              type="text"
+              name="teacherType"
+              value={selectedTeacher.teacherType || ''}
+              onChange={handleInputChange}
+              placeholder="e.g. permanent"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Account Number</label>
+            <input
+              type="number"
+              name="accountNumber"
+              value={selectedTeacher.accountNumber || ''}
+              onChange={handleInputChange}
+              placeholder="e.g. 321312"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+        </div>
       </div>
       <div className="mt-6 flex space-x-3">
         <button

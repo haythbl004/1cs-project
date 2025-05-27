@@ -9,10 +9,11 @@ import {
   faChevronRight,
   faCheckCircle,
   faStar,
+  faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const PromotionSettings = () => {
+const PromotionSettings = ({ onBack, isBack }) => {
   const [promotions, setPromotions] = useState([]);
   const [specialities, setSpecialities] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
@@ -45,7 +46,6 @@ const PromotionSettings = () => {
       const response = await axios.get('http://localhost:3000/api/promotion', {
         withCredentials: true,
       });
-      console.log('GET /api/promotion response:', response.data);
       setPromotions(response.data);
     } catch (error) {
       setErrorMessage('Failed to fetch promotions');
@@ -89,7 +89,6 @@ const PromotionSettings = () => {
       const response = await axios.post('http://localhost:3000/api/promotion', payload, {
         withCredentials: true,
       });
-      console.log('POST /api/promotion response:', response.data);
 
       const speciality = useSpeciality
         ? specialities.find((spec) => spec.id === parseInt(formData.specialityId)) || {
@@ -273,13 +272,24 @@ const PromotionSettings = () => {
           )}
         </h2>
         {!isAdding && editingId === null && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Promotion
-          </button>
+          <div className="flex space-x-3">
+            {isBack && (
+              <button
+                onClick={() => onBack('home')}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                Back to Home
+              </button>
+            )}
+            <button
+              onClick={() => setIsAdding(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Add New Promotion
+            </button>
+          </div>
         )}
       </div>
 

@@ -1,12 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faAngleRight } from "@fortawesome/free-solid-svg-icons";
 import EditSessionForm from "./EditSessionForm";
 import AddSessionForm from "./AddSessionForm";
 import axios from "axios";
 
-const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, showEditForm, setShowEditForm }) => {
+const Planning = ({ schedule, onViewModeChange, showAddForm, setShowAddForm, showEditForm, setShowEditForm }) => {
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"];
   const timeSlots = ["8:00-10:00", "9:30-11:00", "11:00-12:30", "14:00-15:30"];
 
@@ -24,16 +23,19 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
     message: "",
     type: "",
   });
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for re-fetching sessions
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for re-fetching seances
 
-  // Fetch sessions on mount or when refreshTrigger changes
-  const fetchSessions = async () => {
+  // Fetch seances on mount or when refreshTrigger changes
+  const fetchSeances = async () => {
     try {
-      console.log(`Fetching sessions for sessionId: ${sessionId}`);
-      const response = await axios.get(`http://localhost:3000/api/schedule/sessions/${sessionId}/seances`);
-      const sessions = Array.isArray(response.data) ? response.data : [response.data];
-      console.log('Fetched sessions:', sessions);
+      console.log(`Fetching seances for scheduleId: ${schedule.id}`);
+      const response = await axios.get(`http://localhost:3000/api/schedule/${schedule.id}/seances`, {
+        withCredentials: true,
+      });
+      console.log('Raw API response:', response.data);
+      const seances = response.data.seances || (Array.isArray(response.data) ? response.data : [response.data]);
 
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Saturday"];
       const newScheduleData = {
         Monday: {},
         Tuesday: {},
@@ -43,40 +45,65 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
         Sunday: {},
       };
 
-      sessions.forEach((item, index) => {
-        const { day, startTime, endTime, module, teacherId, location, type, group } = item.Seance || {};
+      const skippedSeances = [];
+      seances.forEach((item, index) => {
+        const { id, day, startTime, endTime, module, teacherId, location, type, group } = item.Seance || {};
         const { firstName, lastName } = item.User || {};
-        const formattedDay = day ? day.charAt(0).toUpperCase() + day.slice(1) : '';
-        const timeSlot = startTime && endTime ? `${startTime.slice(0, 5).replace(/^0/, '')}-${endTime.slice(0, 5).replace(/^0/, '')}` : '';
 
-        console.log(`Processing session ${index}: Day=${formattedDay}, Time=${timeSlot}, Module=${module}`);
+        // Normalize day to match days array (case-insensitive)
+        const formattedDay = day && typeof day === 'string'
+          ? day.charAt(0).toUpperCase() + day.slice(1).toLowerCase()
+          : null;
 
-        if (days.includes(formattedDay) && timeSlots.includes(timeSlot)) {
+        // Validate time slot
+        const timeSlot = startTime && endTime && typeof startTime === 'string' && typeof endTime === 'string'
+          ? (() => {
+              try {
+                const formattedStart = startTime.slice(0, 5).replace(/^0/, '');
+                const formattedEnd = endTime.slice(0, 5).replace(/^0/, '');
+                const slot = `${formattedStart}-${formattedEnd}`;
+                return timeSlots.includes(slot) ? slot : null;
+              } catch (error) {
+                console.error(`Error formatting time slot for seance ${index}:`, error);
+                return null;
+              }
+            })()
+          : null;
+
+        console.log(`Processing seance ${index}: Day=${formattedDay || 'Invalid'}, Time=${timeSlot || 'Invalid'}, Module=${module || 'N/A'}`);
+
+        if (formattedDay && timeSlot && days.includes(formattedDay) && timeSlots.includes(timeSlot)) {
           newScheduleData[formattedDay][timeSlot] = newScheduleData[formattedDay][timeSlot] || [];
           newScheduleData[formattedDay][timeSlot].push({
-            module,
-            teacherId,
+            id, // Include seance ID
+            module: module || 'N/A',
+            teacherId: teacherId || null,
             teacherName: `${firstName || 'N/A'} ${lastName || ''}`.trim(),
-            location,
-            type,
-            group,
+            location: location || 'N/A',
+            type: type || 'N/A',
+            group: group || 'N/A',
           });
         } else {
-          console.warn(`Skipping session ${index}: Invalid day (${formattedDay}) or time slot (${timeSlot})`);
+          console.warn(`Skipping seance ${index}: Invalid day (${formattedDay}) or time slot (${timeSlot})`);
+          skippedSeances.push({ index, day: formattedDay, time: timeSlot });
         }
       });
+
+      if (skippedSeances.length > 0) {
+        showNotification(`Skipped ${skippedSeances.length} invalid seance(s)`, 'warning');
+      }
 
       console.log('Updated scheduleData:', newScheduleData);
       setScheduleData(newScheduleData);
     } catch (err) {
-      console.error('Failed to fetch sessions:', err);
-      setNotification({ show: true, message: 'Failed to fetch sessions', type: 'error' });
+      console.error('Failed to fetch seances:', err);
+      setNotification({ show: true, message: 'Failed to fetch seances', type: 'error' });
     }
   };
 
   useEffect(() => {
-    fetchSessions();
-  }, [sessionId, refreshTrigger]);
+    fetchSeances();
+  }, [schedule.id, refreshTrigger]);
 
   const showNotification = (message, type) => {
     setNotification({ show: true, message, type });
@@ -97,10 +124,19 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
   };
 
   const handleEditClick = (day, time, index) => {
-    setEditingSession({ day, time, index });
-    setShowEditForm(true);
-    setShowAddForm(false);
-    onViewModeChange('planning-edit');
+    const session = scheduleData[day]?.[time]?.[index];
+    if (session) {
+      setEditingSession({
+        day,
+        time,
+        index,
+        id: session.id, // Pass seance ID
+        teacherId: session.teacherId, // Pass teacher ID
+      });
+      setShowEditForm(true);
+      setShowAddForm(false);
+      onViewModeChange('planning-edit');
+    }
   };
 
   const handleSaveSession = (formData, message, type, closeForm) => {
@@ -131,23 +167,31 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
       };
     });
 
-    showNotification("Session removed successfully!", "success");
+    showNotification("Seance removed successfully!", "success");
     setShowEditForm(false);
     onViewModeChange('planning');
     setRefreshTrigger((prev) => prev + 1); // Trigger re-fetch
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto">
       {notification.show && (
         <div
-          className={`fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg ${
+          className={`rounded-md p-3 border mb-6 ${
             notification.type === "success"
-              ? "bg-green-100 text-green-800 border border-gray-200"
-              : "bg-red-100 text-red-800 border border-red-200"
+              ? "bg-green-50 border-green-100"
+              : "bg-red-50 border-red-100"
           }`}
         >
-          {notification.message}
+          <div className="flex items-center">
+            <FontAwesomeIcon
+              icon={faAngleRight}
+              className={`flex-shrink-0 h-5 w-5 mr-2 ${
+                notification.type === "success" ? "text-green-500" : "text-red-500"
+              }`}
+            />
+            <p className="text-sm font-medium text-gray-700">{notification.message}</p>
+          </div>
         </div>
       )}
       {(showAddForm || showEditForm) ? (
@@ -157,7 +201,7 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
               days={days}
               timeSlots={timeSlots}
               onSave={handleSaveSession}
-              sessionId={sessionId}
+              scheduleId={schedule.id}
               onClose={() => {
                 setShowAddForm(false);
                 onViewModeChange('planning');
@@ -167,19 +211,9 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
           )}
           {showEditForm && editingSession && (
             <EditSessionForm
-              days={days}
-              timeSlots={timeSlots}
-              session={{
-                day: editingSession.day,
-                time: editingSession.time,
-                module: scheduleData[editingSession.day][editingSession.time][editingSession.index].module,
-                teacherId: scheduleData[editingSession.day][editingSession.time][editingSession.index].teacherId,
-                teacherName: scheduleData[editingSession.day][editingSession.time][editingSession.index].teacherName,
-                location: scheduleData[editingSession.day][editingSession.time][editingSession.index].location,
-                type: scheduleData[editingSession.day][editingSession.time][editingSession.index].type,
-                group: scheduleData[editingSession.day][editingSession.time][editingSession.index].group,
-              }}
-              onSave={handleSaveSession}
+              scheduleId={schedule.id} // Pass schedule ID
+              seanceId={editingSession.id} // Pass seance ID
+              teacherId={editingSession.teacherId} // Pass teacher ID
               onRemove={handleRemoveSession}
             />
           )}
@@ -187,18 +221,29 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
       ) : (
         <div className="overflow-x-auto">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-xl font-semibold">Weekly Planning</span>
+            <div>
+              <span className="block text-xl font-semibold">
+                Weekly Planning for {schedule.promotion} - {schedule.semester}
+              </span>
+              <div className="text-sm text-gray-600 mt-1">
+                <span>Educational Year: {schedule.educationalYear || 'N/A'}</span>
+                <span className="mx-2">|</span>
+                <span>Start Date: {schedule.startDate || 'N/A'}</span>
+                <span className="mx-2">|</span>
+                <span>End Date: {schedule.endDate || 'N/A'}</span>
+              </div>
+            </div>
             <button
               onClick={handleAddClick}
               className="bg-blue-600 hover:cursor-pointer hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
             >
               <FontAwesomeIcon icon={faPlus} className="mr-2" />
-              Add New Session
+              Add New Seance
             </button>
           </div>
           <div className="inline-block min-w-full align-middle border border-gray-200 rounded-lg">
             <div className="grid grid-flow-col auto-cols-fr">
-              <div className="w-48.5 h-14 flex items-center justify-center bg-gray-50 border-r border-b border-gray-200 sticky left-0 z-10">
+              <div className="w-51 h-14 flex items-center justify-center bg-gray-50 border-r border-b border-gray-200 sticky left-0 z-10">
                 <span className="font-medium text-gray-600">Time/Day</span>
               </div>
               {days.map((day) => (
@@ -224,7 +269,7 @@ const Planning = ({ sessionId, onViewModeChange, showAddForm, setShowAddForm, sh
                   style={{ minHeight: rowHeight }}
                 >
                   <div
-                    className={`w-48.5 flex items-center justify-center bg-gray-50 font-medium text-gray-700 border-r border-b border-gray-200 sticky left-0 z-10 ${
+                    className={`w-51 flex items-center justify-center bg-gray-50 font-medium text-gray-700 border-r border-b border-gray-200 sticky left-0 z-10 ${
                       hasMultipleSessions ? "pt-2" : "items-center"
                     }`}
                   >

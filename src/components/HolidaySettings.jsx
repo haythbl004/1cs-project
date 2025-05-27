@@ -9,10 +9,11 @@ import {
   faChevronRight,
   faCheckCircle,
   faCalendarAlt,
+  faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
-const HolidaySettings = () => {
+const HolidaySettings = ({ onBack, isBack }) => {
   const [holidays, setHolidays] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -105,7 +106,6 @@ const HolidaySettings = () => {
         },
         { withCredentials: true }
       );
-      // Refetch holidays to ensure the UI reflects the latest backend data
       await fetchHolidays();
       setEditingId(null);
       setFormData({ name: '', startDate: '', endDate: '' });
@@ -209,13 +209,24 @@ const HolidaySettings = () => {
           )}
         </h2>
         {!isAdding && editingId === null && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Holiday
-          </button>
+          <div className="flex space-x-3">
+            {isBack && (
+              <button
+                onClick={() => onBack('home')}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                Back to Home
+              </button>
+            )}
+            <button
+              onClick={() => setIsAdding(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <FontAwesomeIcon icon={faPlus} className="mr-2" />
+              Add New Holiday
+            </button>
+          </div>
         )}
       </div>
 

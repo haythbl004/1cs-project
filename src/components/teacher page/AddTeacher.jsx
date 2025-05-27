@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faSave } from '@fortawesome/free-solid-svg-icons';
 import CustomDropdown from '../CustomDropdown'; // Assuming CustomDropdown is in the same directory
+import axios from 'axios';
 
 const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser, navigate }) => {
   const [newTeacher, setNewTeacher] = useState({
@@ -11,6 +12,9 @@ const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser
     password: '',
     grade: null,
     role: 'teacher',
+    paymentType: '',
+    teacherType: '',
+    accountNumber: '',
   });
 
   const handleInputChange = (e) => {
@@ -22,18 +26,39 @@ const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser
     setNewTeacher((prev) => ({ ...prev, grade }));
   };
 
-  const saveNewTeacher = async () => {
+  const addTeacher = async (teacherData) => {
     try {
-      const teacherToAdd = {
-        firstName: newTeacher.firstName,
-        lastName: newTeacher.lastName,
-        email: newTeacher.email,
-        password: newTeacher.password,
-        gradeID: newTeacher.grade?.id,
+      const payload = {
+        firstName: teacherData.firstName,
+        lastName: teacherData.lastName,
+        email: teacherData.email,
+        password: teacherData.password,
+        gradeID: teacherData.grade?.id,
         role: 'teacher',
+        paymentType: teacherData.paymentType,
+        teacherType: teacherData.teacherType,
+        accountNumber: teacherData.accountNumber,
       };
-      await onSave(teacherToAdd);
+
+      await axios.post('http://localhost:3000/api/auth/signup', payload, {
+        withCredentials: true,
+      });
+
+      // Clear the form after successful add
+      setNewTeacher({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        grade: null,
+        role: 'teacher',
+        paymentType: '',
+        teacherType: '',
+        accountNumber: '',
+      });
+
       setSuccessMessage('Teacher added successfully!');
+      if (onSave) onSave(payload); // Pass payload to onSave to update parent
       onCancel();
     } catch (err) {
       console.error('Failed to add teacher:', err);
@@ -44,6 +69,10 @@ const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser
         alert(err.response?.data?.error || 'Failed to add teacher');
       }
     }
+  };
+
+  const saveNewTeacher = async () => {
+    await addTeacher(newTeacher);
   };
 
   return (
@@ -80,20 +109,6 @@ const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser
             </div>
           </div>
         </div>
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
-            <FontAwesomeIcon icon={faEnvelope} className="mx-3 text-gray-400" />
-            <input
-              type="email"
-              name="email"
-              value={newTeacher.email}
-              onChange={handleInputChange}
-              placeholder="Enter email"
-              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-        </div>
         <CustomDropdown
           label="Grade"
           options={gradeOptions}
@@ -101,17 +116,68 @@ const AddTeacher = ({ gradeOptions, onSave, onCancel, setSuccessMessage, setUser
           onChange={handleGradeChange}
           name="grade"
         />
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700">Password</label>
-          <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
-            <FontAwesomeIcon icon={faLock} className="mx-3 text-gray-400" />
+        <div className="relative flex space-x-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faEnvelope} className="mx-3 text-gray-400" />
+              <input
+                type="email"
+                name="email"
+                value={newTeacher.email}
+                onChange={handleInputChange}
+                placeholder="Enter email"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <div className="mt-1 flex items-center border border-gray-300 rounded-md shadow-sm">
+              <FontAwesomeIcon icon={faLock} className="mx-3 text-gray-400" />
+              <input
+                type="password"
+                name="password"
+                value={newTeacher.password}
+                onChange={handleInputChange}
+                placeholder="Enter password"
+                className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Payment Type</label>
             <input
-              type="password"
-              name="password"
-              value={newTeacher.password}
+              type="text"
+              name="paymentType"
+              value={newTeacher.paymentType}
               onChange={handleInputChange}
-              placeholder="Enter password"
-              className="flex-1 block w-full border-none rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="e.g. ccp"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Teacher Type</label>
+            <input
+              type="text"
+              name="teacherType"
+              value={newTeacher.teacherType}
+              onChange={handleInputChange}
+              placeholder="e.g. permanent"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700">Account Number</label>
+            <input
+              type="number"
+              name="accountNumber"
+              value={newTeacher.accountNumber}
+              onChange={handleInputChange}
+              placeholder="e.g. 321312"
+              className="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
         </div>

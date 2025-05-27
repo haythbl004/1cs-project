@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AddSessionForm = ({ days, timeSlots, onSave, sessionId, onClose, onSessionAdded }) => {
+const AddSessionForm = ({ days, timeSlots, onSave, scheduleId, onClose, onSessionAdded }) => {
   const [formData, setFormData] = useState({
     day: '',
     time: '',
@@ -27,6 +27,7 @@ const AddSessionForm = ({ days, timeSlots, onSave, sessionId, onClose, onSession
         const response = await axios.get('http://localhost:3000/api/teacher/get');
         setTeachers(response.data);
         setLoading(false);
+        console.log('Teachers fetched:', scheduleId);
       } catch (err) {
         console.error('Error fetching teachers:', err);
         setError('Failed to fetch teachers');
@@ -102,7 +103,7 @@ const AddSessionForm = ({ days, timeSlots, onSave, sessionId, onClose, onSession
     };
 
     try {
-      await axios.post(`http://localhost:3000/api/schedule/${sessionId}/seances`, payload);
+      await axios.post(`http://localhost:3000/api/schedule/${scheduleId}/seances`, payload);
       onSave(
         {
           ...formData,
